@@ -1,4 +1,4 @@
-name: Deploy to VPS Ubuntu 16.04
+name: Deploy Streamlit with UV to VPS
 
 on: [push]
 
@@ -8,20 +8,17 @@ jobs:
     steps:
       - name: Basic system info
         run: |
-          echo "🎯 === DEPLOYMENT STARTED ==="
+          echo "🎯 === UV + STREAMLIT DEPLOYMENT STARTED ==="
           echo "📅 Date: $(date)"
           echo "👤 User: $(whoami)"
           echo "🖥️ Hostname: $(hostname)"
           echo "📂 Working Directory: $(pwd)"
-          echo "🐧 OS Info: $(cat /etc/os-release | head -2)"
-          echo "💾 Memory: $(free -h | head -2)"
-          echo "💽 Disk: $(df -h / | tail -1)"
           
       - name: Deploy application
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          echo "🚀 === DEPLOYING TO /home/ubuntu/initial_project ==="
+          echo "🚀 === DEPLOYING UV + STREAMLIT APP ==="
           
           # Navigate to home directory
           cd /home/ubuntu
@@ -40,7 +37,82 @@ jobs:
           cd initial_project
           
           echo "✅ Repository cloned successfully to /home/ubuntu/initial_project"
-          echo "📋 Files in project:"
+          echo "📋 Project structure:"
           ls -la
+          echo "📋 Website folder contents:"
+          ls -la website/
           
-          echo "📍 Current location: $(pwd)"
+      - name: Build and run Streamlit container with UV
+        run: |
+          echo "🐳 === DOCKER CONTAINER SETUP WITH UV ==="
+          cd /home/ubuntu/initial_project
+          
+          # Stop and remove existing container if running
+          if docker ps -a | grep -q "streamlit-uv-app"; then
+            echo "🛑 Stopping existing container..."
+            docker stop streamlit-uv-app
+            docker rm streamlit-uv-app
+          fi
+          
+          # Remove old image if exists
+          if docker images | grep -q "streamlit-uv"; then
+            echo "🗑️ Removing old image..."
+            docker rmi streamlit-uv
+          fi
+          
+          # Build new Docker image with UV
+          echo "🏗️ Building Docker image with UV..."
+          docker build -t streamlit-uv .
+          
+          # Run container with port mapping
+          echo "🚀 Starting Streamlit container with UV..."
+          docker run -d \
+            --name streamlit-uv-app \
+            -p 80:8501 \
+            --restart unless-stopped \
+            streamlit-uv
+          
+          # Wait a moment for container to start
+          sleep 10
+          
+          # Check if container is running
+          if docker ps | grep -q "streamlit-uv-app"; then
+            echo "✅ Streamlit + UV container is running!"
+            echo "🌐 Access your app at: http://$(hostname -I | awk '{print $1}')"
+            echo "📱 Streamlit dashboard accessible directly via VPS IP!"
+          else
+            echo "❌ Container failed to start"
+            echo "📋 Container logs:"
+            docker logs streamlit-uv-app
+            exit 1
+          fi
+          
+      - name: Container health check
+        run: |
+          echo "🔍 === HEALTH CHECK ==="
+          
+          # Check container status
+          echo "📊 Container status:"
+          docker ps | grep streamlit-uv-app
+          
+          # Check container logs
+          echo "📋 Recent container logs:"
+          docker logs --tail 20 streamlit-uv-app
+          
+          # Check if app responds
+          sleep 5
+          if curl -f http://localhost/ > /dev/null 2>&1; then
+            echo "✅ Streamlit app is responding!"
+            echo "🎉 UV + Streamlit deployment successful!"
+          else
+            echo "⚠️ App might still be starting... checking again in 5 seconds"
+            sleep 5
+            if curl -f http://localhost/ > /dev/null 2>&1; then
+              echo "✅ Streamlit app is now responding!"
+            else
+              echo "❌ App is not responding"
+            fi
+          fi
+          
+          echo "📊 Container resource usage:"
+          docker stats streamlit-uv-app --no-stream
