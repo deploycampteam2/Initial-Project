@@ -1,33 +1,31 @@
-# Use Python 3.9 for better Ubuntu 16.04 compatibility
+# Simple Dockerfile untuk Ubuntu 16.04 compatibility
 FROM python:3.9-slim
 
-# Install UV
-RUN pip install uv
+# Update pip dengan no-progress untuk avoid threading issue
+RUN pip install --upgrade pip --progress-bar off
 
 # Set working directory
 WORKDIR /app
 
-# Copy UV configuration files
-COPY pyproject.toml .
-COPY .python-version .
+# Copy requirements file
+COPY website/requirements.txt .
+
+# Install dependencies with minimal progress output
+RUN pip install --no-cache-dir -r requirements.txt --progress-bar off
 
 # Copy website folder
-COPY website/ ./website/
+COPY website/ .
 
-# Install dependencies with UV
-RUN uv sync
-
-# Create non-root user for better security and thread handling
-RUN useradd --create-home --shell /bin/bash app
-RUN chown -R app:app /app
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app && \
+    chown -R app:app /app
 USER app
 
 # Expose Streamlit port
 EXPOSE 8501
 
-# Change to website directory and run Streamlit with optimized settings
-WORKDIR /app/website
-CMD ["uv", "run", "streamlit", "run", "app.py", \
+# Run Streamlit with optimized settings for Ubuntu 16.04
+CMD ["streamlit", "run", "app.py", \
      "--server.address", "0.0.0.0", \
      "--server.port", "8501", \
      "--server.headless", "true", \
