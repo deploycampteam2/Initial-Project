@@ -23,6 +23,15 @@ jobs:
           # Navigate to home directory
           cd /home/ubuntu
           
+          # Remove existing project if exists and create a new one
+          if [ -d "initial_project" ]; then
+            echo "🧹 Removing existing project..."
+            rm -rf initial_project
+          fi
+
+          echo "📁 Creating new initial_project folder..."
+          mkdir -p initial_project
+          
           # Clone repository using token
           echo "📥 Cloning repository..."
           git clone https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git initial_project
