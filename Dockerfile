@@ -1,11 +1,24 @@
 FROM python:3.11-slim
 
+RUN pip install --upgrade pip --progress-bar off --no-deps
+
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install streamlit
+RUN pip install pandas
+RUN pip install numpy
+RUN pip install plotly
 
 # Copy project
-COPY . /app
+COPY website/ .
 WORKDIR /app
 
-CMD ["python", "website/app.py"]
+# Expose port
+EXPOSE 8501
+
+# Run with minimal settings
+CMD ["streamlit", "run", "app.py", \
+     "--server.address", "0.0.0.0", \
+     "--server.port", "8501", \
+     "--server.headless", "true", \
+     "--browser.gatherUsageStats", "false"]
