@@ -4,10 +4,7 @@ RUN pip install --upgrade pip --progress-bar off --no-deps
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install streamlit
-RUN pip install pandas
-RUN pip install numpy
-RUN pip install plotly
+RUN pip install -r requirements.txt
 
 # Copy project
 COPY website/ .
