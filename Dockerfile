@@ -8,7 +8,7 @@ WORKDIR /app
 RUN pip install --upgrade pip --progress-bar off
 
 # Copy requirements and install dependencies
-COPY website/requirements.txt .
+COPY requirements.txt .
 RUN pip install -r requirements.txt --progress-bar off
 
 # Copy website files to app directory
