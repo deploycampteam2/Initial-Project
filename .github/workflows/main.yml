@@ -42,18 +42,42 @@ jobs:
           echo "📁 Creating MLflow data directory..."
           mkdir -p mlflow_data
           
-      - name: Deploy services with Docker Compose
+      - name: Clean Docker environment
         run: |
-          echo "🐳 === DEPLOYING SEPARATE SERVICES ==="
-          cd /home/ubuntu/initial_project
+          echo "🧹 === CLEANING DOCKER ENVIRONMENT ==="
           
-          # Stop existing services
-          echo "🛑 Stopping existing services..."
+          # Stop ALL running containers (not just compose)
+          echo "🛑 Stopping all running containers..."
+          docker stop $(docker ps -q) 2>/dev/null || true
+          
+          # Remove ALL containers
+          echo "🗑️ Removing all containers..."
+          docker rm $(docker ps -aq) 2>/dev/null || true
+          
+          # Stop any existing compose services
+          cd /home/ubuntu/initial_project
           docker-compose down 2>/dev/null || true
           
-          # Clean up
-          echo "🧹 Cleaning up..."
+          # Clean up docker system
+          echo "🧹 Cleaning up docker system..."
           docker system prune -f
+          docker network prune -f
+          
+          # Verify clean state
+          echo "✅ Verifying clean state..."
+          echo "Running containers:"
+          docker ps
+          echo "Port 80 usage:"
+          sudo lsof -i :80 || echo "Port 80 is free"
+          echo "Port 5000 usage:"
+          sudo lsof -i :5000 || echo "Port 5000 is free"
+          echo "Port 8501 usage:"
+          sudo lsof -i :8501 || echo "Port 8501 is free"
+          
+      - name: Deploy services with Docker Compose
+        run: |
+          echo "🐳 === DEPLOYING FRESH SERVICES ==="
+          cd /home/ubuntu/initial_project
           
           # Build and start services
           echo "🏗️ Building and starting services..."
