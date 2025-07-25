@@ -1,4 +1,4 @@
-name: Deploy Streamlit (Improved) to VPS
+name: Deploy Streamlit + MLflow (Separate)
 
 on: [push]
 
@@ -8,143 +8,126 @@ jobs:
     steps:
       - name: Basic system info
         run: |
-          echo "🎯 === IMPROVED STREAMLIT DEPLOYMENT ==="
+          echo "🎯 === SEPARATE DEPLOYMENT: STREAMLIT + MLFLOW ==="
           echo "📅 Date: $(date)"
           echo "👤 User: $(whoami)"
           echo "🖥️ Hostname: $(hostname)"
-          echo "📂 Working Directory: $(pwd)"
           echo "🌐 Server IP: $(hostname -I | awk '{print $1}')"
           
       - name: Deploy application
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          echo "🚀 === DEPLOYING STREAMLIT APP ==="
+          echo "🚀 === DEPLOYING APPLICATIONS ==="
           
           # Navigate to home directory
           cd /home/ubuntu
           
           # Clean removal of existing project
           if [ -d "initial_project" ]; then
-            echo "🧹 Removing existing project completely..."
+            echo "🧹 Removing existing project..."
             rm -rf initial_project
           fi
           
-          # Clone repository to fresh directory
-          echo "📥 Cloning repository to fresh directory..."
+          # Clone repository
+          echo "📥 Cloning repository..."
           git clone https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git initial_project
-          
-          # Navigate to project directory
           cd initial_project
           
           echo "✅ Repository cloned successfully"
           echo "📋 Project structure:"
           ls -la
-          echo "📋 Website folder contents:"
-          if [ -d "website" ]; then
-            ls -la website/
-          else
-            echo "⚠️ Website folder not found!"
-          fi
           
-      - name: Build and run Streamlit container (Improved)
+          # Create MLflow data directory
+          echo "📁 Creating MLflow data directory..."
+          mkdir -p mlflow_data
+          
+      - name: Deploy services with Docker Compose
         run: |
-          echo "🐳 === IMPROVED DOCKER SETUP ==="
+          echo "🐳 === DEPLOYING SEPARATE SERVICES ==="
           cd /home/ubuntu/initial_project
           
-          # Stop and remove ALL streamlit containers
-          echo "🛑 Stopping all existing streamlit containers..."
-          docker stop $(docker ps -q --filter "name=streamlit") 2>/dev/null || true
-          docker rm $(docker ps -aq --filter "name=streamlit") 2>/dev/null || true
+          # Stop existing services
+          echo "🛑 Stopping existing services..."
+          docker-compose down 2>/dev/null || true
           
-          # Clean up old images more thoroughly
-          echo "🗑️ Cleaning up old images..."
-          docker rmi streamlit-app 2>/dev/null || true
+          # Clean up
+          echo "🧹 Cleaning up..."
           docker system prune -f
           
-          # Build new Docker image
-          echo "🏗️ Building Docker image..."
-          docker build -t streamlit-app . --no-cache
+          # Build and start services
+          echo "🏗️ Building and starting services..."
+          docker-compose up -d --build
           
-          # Run container with improved settings
-          echo "🚀 Starting Streamlit container..."
-          docker run -d \
-            --name streamlit-simple \
-            -p 80:8501 \
-            -p 8501:8501 \
-            --restart unless-stopped \
-            --health-cmd="curl -f http://localhost:8501/ || exit 1" \
-            --health-interval=30s \
-            --health-timeout=10s \
-            --health-retries=3 \
-            streamlit-app
+          # Wait for services to start
+          echo "⏳ Waiting for services to initialize..."
+          sleep 25
           
-          # Wait for container to start
-          echo "⏳ Waiting for container to initialize..."
-          sleep 15
+          # Check services status
+          echo "📊 Services status:"
+          docker-compose ps
           
-          # Check if container is running
-          if docker ps | grep -q "streamlit-simple"; then
-            echo "✅ Streamlit container is running!"
-            echo "🌐 Primary access: http://$(hostname -I | awk '{print $1}')"
-            echo "🌐 Alternative access: http://$(hostname -I | awk '{print $1}'):8501"
-            echo "🏠 Local access: http://localhost"
+          # Verify both services are running
+          if docker ps | grep -q "streamlit-app" && docker ps | grep -q "mlflow-server"; then
+            echo "✅ Both services are running!"
           else
-            echo "❌ Container failed to start"
-            echo "📋 Container logs:"
-            docker logs streamlit-simple
+            echo "❌ Some services failed to start"
+            docker-compose logs
             exit 1
           fi
           
-      - name: Comprehensive health check
+      - name: Service accessibility check
         run: |
-          echo "🔍 === COMPREHENSIVE HEALTH CHECK ==="
+          echo "🔍 === ACCESSIBILITY CHECK ==="
+          cd /home/ubuntu/initial_project
           
-          # Check container status
-          echo "📊 Container status:"
-          docker ps | grep streamlit-simple
+          # Wait a bit more for full initialization
+          sleep 10
           
-          # Check port bindings
-          echo "🔌 Port bindings:"
-          docker port streamlit-simple
-          
-          # Check container health
-          echo "🏥 Container health:"
-          docker inspect streamlit-simple --format='{{.State.Health.Status}}'
-          
-          # Test multiple access methods
-          echo "🧪 Testing accessibility..."
-          
-          # Test port 80
+          echo "🧪 Testing Streamlit Dashboard..."
           if curl -f -s http://localhost/ > /dev/null 2>&1; then
-            echo "✅ Port 80: Accessible"
+            echo "✅ Streamlit: Accessible on port 80"
           else
-            echo "❌ Port 80: Not accessible"
+            echo "⚠️ Streamlit: Not responding on port 80"
           fi
           
-          # Test port 8501
           if curl -f -s http://localhost:8501/ > /dev/null 2>&1; then
-            echo "✅ Port 8501: Accessible"
+            echo "✅ Streamlit: Accessible on port 8501"
           else
-            echo "❌ Port 8501: Not accessible"
+            echo "⚠️ Streamlit: Not responding on port 8501"
           fi
+          
+          echo "🧪 Testing MLflow Server..."
+          if curl -f -s http://localhost:5000/ > /dev/null 2>&1; then
+            echo "✅ MLflow: Accessible on port 5000"
+          else
+            echo "⚠️ MLflow: Not responding on port 5000"
+          fi
+          
+          # Show container health
+          echo "🏥 Container health status:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
           
           # Show recent logs
           echo "📋 Recent container logs:"
-          docker logs --tail 15 streamlit-simple
+          echo "--- Streamlit logs ---"
+          docker logs --tail 5 streamlit-app
+          echo "--- MLflow logs ---"
+          docker logs --tail 5 mlflow-server
           
           # Show listening ports
-          echo "👂 Server listening ports:"
-          sudo netstat -tulnp | grep -E ':80|:8501' || echo "No ports found listening"
+          echo "👂 Listening ports:"
+          sudo netstat -tulnp | grep -E ':80|:5000|:8501'
           
-          # Final status
           echo ""
-          echo "🎉 Deployment Status: COMPLETED"
-          echo "🌐 Access your Streamlit app at:"
-          echo "   👉 http://$(hostname -I | awk '{print $1}')"
-          echo "   👉 http://$(hostname -I | awk '{print $1}'):8501"
+          echo "🎉 Deployment completed successfully!"
           echo ""
-          echo "🔧 Debug commands:"
-          echo "   docker logs streamlit-simple"
-          echo "   docker exec -it streamlit-simple /bin/bash"
-          echo "   curl -v http://localhost/"
+          echo "📊 Your Applications:"
+          echo "   🌐 Streamlit Dashboard: http://$(hostname -I | awk '{print $1}')"
+          echo "   🤖 MLflow UI: http://$(hostname -I | awk '{print $1}'):5000"
+          echo ""
+          echo "🔧 Management commands:"
+          echo "   docker-compose ps          # Check status"
+          echo "   docker-compose logs -f     # View logs"
+          echo "   docker-compose restart     # Restart services"
+          echo "   docker-compose down        # Stop services"
