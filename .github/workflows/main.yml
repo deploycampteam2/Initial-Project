@@ -1,14 +1,14 @@
-name: Test Self-Hosted Runner Ubuntu 16.04
+name: Deploy to VPS Ubuntu 16.04
 
 on: [push]
 
 jobs:
-  test:
+  deploy:
     runs-on: self-hosted
     steps:
       - name: Basic system info
         run: |
-          echo "🎯 === RUNNER TEST BERHASIL ==="
+          echo "🎯 === DEPLOYMENT STARTED ==="
           echo "📅 Date: $(date)"
           echo "👤 User: $(whoami)"
           echo "🖥️ Hostname: $(hostname)"
@@ -17,25 +17,30 @@ jobs:
           echo "💾 Memory: $(free -h | head -2)"
           echo "💽 Disk: $(df -h / | tail -1)"
           
-      - name: Manual git clone
+      - name: Deploy application
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          echo "🚀 === DEPLOYING TO /home/ubuntu/initial_project ==="
+          
+          # Navigate to home directory
+          cd /home/ubuntu
+          
+          # Backup existing project if exists
+          if [ -d "initial_project" ]; then
+            echo "📦 Backing up existing project..."
+            mv initial_project initial_project_backup_$(date +%Y%m%d_%H%M%S)
+          fi
+          
+          # Clone repository using token
           echo "📥 Cloning repository..."
-          cd /tmp
-          rm -rf repo-test
-          git clone https://github.com/$GITHUB_REPOSITORY.git repo-test
-          cd repo-test
-          echo "✅ Repository cloned successfully!"
-          echo "📋 Files in repo:"
+          git clone https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git initial_project
+          
+          # Navigate to project directory
+          cd initial_project
+          
+          echo "✅ Repository cloned successfully to /home/ubuntu/initial_project"
+          echo "📋 Files in project:"
           ls -la
           
-      - name: Deploy simulation
-        run: |
-          echo "🚀 === DEPLOYMENT SIMULATION ==="
-          echo "🔄 Updating application..."
-          sleep 2
-          echo "📦 Installing dependencies..."
-          sleep 1  
-          echo "🏗️ Building application..."
-          sleep 2
-          echo "🎉 Deployment completed successfully!"
-          echo "🌐 Application ready at: http://$(hostname -I | awk '{print $1}'):3000"
+          echo "📍 Current location: $(pwd)"
