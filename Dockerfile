@@ -1,34 +1,49 @@
-# Simple Dockerfile untuk Ubuntu 16.04 compatibility
-FROM python:3.12.3
+# Gunakan base image python yang lebih kecil (slim)
+FROM python:3.12-slim
 
-# Update pip dengan no-progress untuk avoid threading issue
-RUN pip install --upgrade pip --progress-bar off
+# Atur environment variables agar Docker build lebih bersih dan efisien
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100
 
-# Set working directory
+# Install dependencies dasar yang diperlukan oleh banyak wheel (seperti pandas, numpy, dll)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    libffi-dev \
+    libpq-dev \
+    libssl-dev \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Buat direktori kerja
 WORKDIR /app
 
-# Copy requirements file
+# Salin file requirements terlebih dahulu (lebih efisien caching)
 COPY requirements.txt .
 
-# Install dependencies with minimal progress output
-RUN pip install --no-cache-dir -r requirements.txt --progress-bar off
+# Install Python dependencies
+RUN pip install -r requirements.txt
 
-# Copy website folder
+# Salin seluruh kode aplikasi
 COPY website/ .
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app && \
-    chown -R app:app /app
-USER app
+# Buat user non-root
+RUN useradd --create-home --shell /bin/bash appuser \
+    && chown -R appuser:appuser /app
+USER appuser
 
-# Expose Streamlit port
+# Buka port Streamlit
 EXPOSE 8501
 
-# Run Streamlit with optimized settings for Ubuntu 16.04
+# Jalankan aplikasi Streamlit
 CMD ["streamlit", "run", "app.py", \
-     "--server.address", "0.0.0.0", \
-     "--server.port", "8501", \
-     "--server.headless", "true", \
-     "--server.enableCORS", "false", \
-     "--server.enableXsrfProtection", "false", \
-     "--browser.gatherUsageStats", "false"]
+     "--server.address=0.0.0.0", \
+     "--server.port=8501", \
+     "--server.headless=true", \
+     "--server.enableCORS=false", \
+     "--server.enableXsrfProtection=false", \
+     "--browser.gatherUsageStats=false"]
