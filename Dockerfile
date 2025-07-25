@@ -8,7 +8,7 @@ RUN pip install --upgrade pip --progress-bar off
 WORKDIR /app
 
 # Copy requirements file
-COPY website/requirements.txt .
+COPY requirements.txt .
 
 # Install dependencies with minimal progress output
 RUN pip install --no-cache-dir -r requirements.txt --progress-bar off
