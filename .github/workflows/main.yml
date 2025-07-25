@@ -1,4 +1,4 @@
-name: Deploy Streamlit (Simple) to VPS
+name: Deploy Streamlit (Improved) to VPS
 
 on: [push]
 
@@ -8,11 +8,12 @@ jobs:
     steps:
       - name: Basic system info
         run: |
-          echo "🎯 === SIMPLE STREAMLIT DEPLOYMENT ==="
+          echo "🎯 === IMPROVED STREAMLIT DEPLOYMENT ==="
           echo "📅 Date: $(date)"
           echo "👤 User: $(whoami)"
           echo "🖥️ Hostname: $(hostname)"
           echo "📂 Working Directory: $(pwd)"
+          echo "🌐 Server IP: $(hostname -I | awk '{print $1}')"
           
       - name: Deploy application
         env:
@@ -23,17 +24,14 @@ jobs:
           # Navigate to home directory
           cd /home/ubuntu
           
-          # Remove existing project if exists and create a new one
+          # Clean removal of existing project
           if [ -d "initial_project" ]; then
-            echo "🧹 Removing existing project..."
+            echo "🧹 Removing existing project completely..."
             rm -rf initial_project
           fi
-
-          echo "📁 Creating new initial_project folder..."
-          mkdir -p initial_project
           
-          # Clone repository using token
-          echo "📥 Cloning repository..."
+          # Clone repository to fresh directory
+          echo "📥 Cloning repository to fresh directory..."
           git clone https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git initial_project
           
           # Navigate to project directory
@@ -43,46 +41,54 @@ jobs:
           echo "📋 Project structure:"
           ls -la
           echo "📋 Website folder contents:"
-          ls -la website/
+          if [ -d "website" ]; then
+            ls -la website/
+          else
+            echo "⚠️ Website folder not found!"
+          fi
           
-      - name: Build and run Streamlit container (Simple)
+      - name: Build and run Streamlit container (Improved)
         run: |
-          echo "🐳 === SIMPLE DOCKER SETUP ==="
+          echo "🐳 === IMPROVED DOCKER SETUP ==="
           cd /home/ubuntu/initial_project
           
-          # Stop and remove existing container if running
-          if docker ps -a | grep -q "streamlit-simple"; then
-            echo "🛑 Stopping existing container..."
-            docker stop streamlit-simple
-            docker rm streamlit-simple
-          fi
+          # Stop and remove ALL streamlit containers
+          echo "🛑 Stopping all existing streamlit containers..."
+          docker stop $(docker ps -q --filter "name=streamlit") 2>/dev/null || true
+          docker rm $(docker ps -aq --filter "name=streamlit") 2>/dev/null || true
           
-          # Remove old image if exists
-          if docker images | grep -q "streamlit-app"; then
-            echo "🗑️ Removing old image..."
-            docker rmi streamlit-app
-          fi
+          # Clean up old images more thoroughly
+          echo "🗑️ Cleaning up old images..."
+          docker rmi streamlit-app 2>/dev/null || true
+          docker system prune -f
           
-          # Build new Docker image (simple version)
-          echo "🏗️ Building simple Docker image..."
-          docker build -t streamlit-app .
+          # Build new Docker image
+          echo "🏗️ Building Docker image..."
+          docker build -t streamlit-app . --no-cache
           
-          # Run container with port mapping
+          # Run container with improved settings
           echo "🚀 Starting Streamlit container..."
           docker run -d \
             --name streamlit-simple \
             -p 80:8501 \
+            -p 8501:8501 \
             --restart unless-stopped \
+            --health-cmd="curl -f http://localhost:8501/ || exit 1" \
+            --health-interval=30s \
+            --health-timeout=10s \
+            --health-retries=3 \
             streamlit-app
           
           # Wait for container to start
-          sleep 10
+          echo "⏳ Waiting for container to initialize..."
+          sleep 15
           
           # Check if container is running
           if docker ps | grep -q "streamlit-simple"; then
             echo "✅ Streamlit container is running!"
-            echo "🌐 Access your app at: http://$(hostname -I | awk '{print $1}')"
-            echo "📱 Dashboard accessible directly via VPS IP!"
+            echo "🌐 Primary access: http://$(hostname -I | awk '{print $1}')"
+            echo "🌐 Alternative access: http://$(hostname -I | awk '{print $1}'):8501"
+            echo "🏠 Local access: http://localhost"
           else
             echo "❌ Container failed to start"
             echo "📋 Container logs:"
@@ -90,29 +96,55 @@ jobs:
             exit 1
           fi
           
-      - name: Health check
+      - name: Comprehensive health check
         run: |
-          echo "🔍 === HEALTH CHECK ==="
+          echo "🔍 === COMPREHENSIVE HEALTH CHECK ==="
           
           # Check container status
           echo "📊 Container status:"
           docker ps | grep streamlit-simple
           
-          # Check container logs
-          echo "📋 Recent logs:"
-          docker logs --tail 10 streamlit-simple
+          # Check port bindings
+          echo "🔌 Port bindings:"
+          docker port streamlit-simple
           
-          # Test if app responds
-          sleep 5
-          if curl -f http://localhost/ > /dev/null 2>&1; then
-            echo "✅ Streamlit app is responding!"
-            echo "🎉 Simple deployment successful!"
+          # Check container health
+          echo "🏥 Container health:"
+          docker inspect streamlit-simple --format='{{.State.Health.Status}}'
+          
+          # Test multiple access methods
+          echo "🧪 Testing accessibility..."
+          
+          # Test port 80
+          if curl -f -s http://localhost/ > /dev/null 2>&1; then
+            echo "✅ Port 80: Accessible"
           else
-            echo "⚠️ App might still be starting..."
-            sleep 5
-            if curl -f http://localhost/ > /dev/null 2>&1; then
-              echo "✅ App is now responding!"
-            else
-              echo "❌ App not responding, check logs"
-            fi
+            echo "❌ Port 80: Not accessible"
           fi
+          
+          # Test port 8501
+          if curl -f -s http://localhost:8501/ > /dev/null 2>&1; then
+            echo "✅ Port 8501: Accessible"
+          else
+            echo "❌ Port 8501: Not accessible"
+          fi
+          
+          # Show recent logs
+          echo "📋 Recent container logs:"
+          docker logs --tail 15 streamlit-simple
+          
+          # Show listening ports
+          echo "👂 Server listening ports:"
+          sudo netstat -tulnp | grep -E ':80|:8501' || echo "No ports found listening"
+          
+          # Final status
+          echo ""
+          echo "🎉 Deployment Status: COMPLETED"
+          echo "🌐 Access your Streamlit app at:"
+          echo "   👉 http://$(hostname -I | awk '{print $1}')"
+          echo "   👉 http://$(hostname -I | awk '{print $1}'):8501"
+          echo ""
+          echo "🔧 Debug commands:"
+          echo "   docker logs streamlit-simple"
+          echo "   docker exec -it streamlit-simple /bin/bash"
+          echo "   curl -v http://localhost/"
