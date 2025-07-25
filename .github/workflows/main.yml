@@ -1,4 +1,4 @@
-name: Test Self-Hosted Runner
+name: Test Self-Hosted Runner Ubuntu 16.04
 
 on: [push]
 
@@ -6,11 +6,36 @@ jobs:
   test:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Test runner
+      - name: Basic system info
         run: |
-          echo "Hello from VPS runner!"
-          echo "Current directory: $(pwd)"
-          echo "Current user: $(whoami)"
+          echo "🎯 === RUNNER TEST BERHASIL ==="
+          echo "📅 Date: $(date)"
+          echo "👤 User: $(whoami)"
+          echo "🖥️ Hostname: $(hostname)"
+          echo "📂 Working Directory: $(pwd)"
+          echo "🐧 OS Info: $(cat /etc/os-release | head -2)"
+          echo "💾 Memory: $(free -h | head -2)"
+          echo "💽 Disk: $(df -h / | tail -1)"
+          
+      - name: Manual git clone
+        run: |
+          echo "📥 Cloning repository..."
+          cd /tmp
+          rm -rf repo-test
+          git clone https://github.com/$GITHUB_REPOSITORY.git repo-test
+          cd repo-test
+          echo "✅ Repository cloned successfully!"
+          echo "📋 Files in repo:"
           ls -la
+          
+      - name: Deploy simulation
+        run: |
+          echo "🚀 === DEPLOYMENT SIMULATION ==="
+          echo "🔄 Updating application..."
+          sleep 2
+          echo "📦 Installing dependencies..."
+          sleep 1  
+          echo "🏗️ Building application..."
+          sleep 2
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 Application ready at: http://$(hostname -I | awk '{print $1}'):3000"
