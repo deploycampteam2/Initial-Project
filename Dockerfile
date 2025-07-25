@@ -1,5 +1,5 @@
 # Simple Dockerfile untuk Ubuntu 16.04 compatibility
-FROM python:3.9-slim
+FROM python:3.12.3
 
 # Update pip dengan no-progress untuk avoid threading issue
 RUN pip install --upgrade pip --progress-bar off
