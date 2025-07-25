@@ -23,12 +23,6 @@ jobs:
           # Navigate to home directory
           cd /home/ubuntu
           
-          # Backup existing project if exists
-          if [ -d "initial_project" ]; then
-            echo "📦 Backing up existing project..."
-            mv initial_project initial_project_backup_$(date +%Y%m%d_%H%M%S)
-          fi
-          
           # Clone repository using token
           echo "📥 Cloning repository..."
           git clone https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git initial_project
