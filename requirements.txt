@@ -21,7 +21,7 @@ pillow==11.3.0
 plotly==6.2.0
 protobuf==6.31.1
 pyarrow==21.0.0
-pydantic==2.10.8
+pydantic==2.10.6
 pydeck==0.9.1
 python-dateutil==2.9.0.post0
 python-multipart==0.0.19
