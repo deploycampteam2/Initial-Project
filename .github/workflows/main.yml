@@ -1,4 +1,4 @@
-name: Deploy Streamlit + MLflow (Separate)
+name: Deploy FastAPI + Streamlit + MLflow
 
 on: [push]
 
@@ -8,7 +8,7 @@ jobs:
     steps:
       - name: Basic system info
         run: |
-          echo "🎯 === SEPARATE DEPLOYMENT: STREAMLIT + MLFLOW ==="
+          echo "🎯 === DEPLOYMENT: FASTAPI + STREAMLIT + MLFLOW ==="
           echo "📅 Date: $(date)"
           echo "👤 User: $(whoami)"
           echo "🖥️ Hostname: $(hostname)"
@@ -73,6 +73,8 @@ jobs:
           sudo lsof -i :5000 || echo "Port 5000 is free"
           echo "Port 8501 usage:"
           sudo lsof -i :8501 || echo "Port 8501 is free"
+          echo "Port 8000 usage:"
+          sudo lsof -i :8000 || echo "Port 8000 is free"
           
       - name: Deploy services with Docker Compose
         run: |
@@ -91,9 +93,9 @@ jobs:
           echo "📊 Services status:"
           docker-compose ps
           
-          # Verify both services are running
-          if docker ps | grep -q "streamlit-app" && docker ps | grep -q "mlflow-server"; then
-            echo "✅ Both services are running!"
+          # Verify all services are running
+          if docker ps | grep -q "fastapi-app" && docker ps | grep -q "streamlit-app" && docker ps | grep -q "mlflow-server"; then
+            echo "✅ All services are running!"
           else
             echo "❌ Some services failed to start"
             docker-compose logs
@@ -107,6 +109,13 @@ jobs:
           
           # Wait a bit more for full initialization
           sleep 10
+          
+          echo "🧪 Testing FastAPI..."
+          if curl -f -s http://localhost:8000/ > /dev/null 2>&1; then
+            echo "✅ FastAPI: Accessible on port 8000"
+          else
+            echo "⚠️ FastAPI: Not responding on port 8000"
+          fi
           
           echo "🧪 Testing Streamlit Dashboard..."
           if curl -f -s http://localhost/ > /dev/null 2>&1; then
@@ -134,6 +143,8 @@ jobs:
           
           # Show recent logs
           echo "📋 Recent container logs:"
+          echo "--- FastAPI logs ---"
+          docker logs --tail 5 fastapi-app
           echo "--- Streamlit logs ---"
           docker logs --tail 5 streamlit-app
           echo "--- MLflow logs ---"
@@ -141,12 +152,14 @@ jobs:
           
           # Show listening ports
           echo "👂 Listening ports:"
-          sudo netstat -tulnp | grep -E ':80|:5000|:8501'
+          sudo netstat -tulnp | grep -E ':80|:5000|:8501|:8000'
           
           echo ""
           echo "🎉 Deployment completed successfully!"
           echo ""
           echo "📊 Your Applications:"
+          echo "   🚀 FastAPI: http://$(hostname -I | awk '{print $1}'):8000"
+          echo "   📖 FastAPI Docs: http://$(hostname -I | awk '{print $1}'):8000/docs"
           echo "   🌐 Streamlit Dashboard: http://$(hostname -I | awk '{print $1}')"
           echo "   🤖 MLflow UI: http://$(hostname -I | awk '{print $1}'):5000"
           echo ""
