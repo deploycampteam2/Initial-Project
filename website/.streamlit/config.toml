@@ -23,3 +23,12 @@ font = "sans serif"
 caching = true
 displayEnabled = true
 showErrorDetails = true
+
+[ui]
+hideTopBar = false
+hideSidebarNav = false
+
+[runner]
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true

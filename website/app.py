@@ -160,22 +160,82 @@ st.markdown("""
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
     
-    /* Consistent image sizing for carousels */
+    /* Responsive image sizing for carousels */
     .stImage > img {
-        height: 250px !important;
+        height: 200px !important;
         object-fit: cover !important;
         border-radius: 10px;
+        width: 100% !important;
     }
     
     .destination-card .stImage {
-        height: 250px !important;
+        height: 200px !important;
         overflow: hidden !important;
         border-radius: 10px;
+        width: 100% !important;
     }
     
     /* Carousel container consistency */
     div[data-testid="stImage"] {
-        height: 250px !important;
+        height: 200px !important;
+        width: 100% !important;
+    }
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        .stImage > img {
+            height: 150px !important;
+        }
+        
+        .destination-card .stImage {
+            height: 150px !important;
+        }
+        
+        div[data-testid="stImage"] {
+            height: 150px !important;
+        }
+        
+        .destination-card {
+            margin-bottom: 1rem;
+        }
+        
+        .card-content {
+            padding: 1rem;
+        }
+        
+        .hero-section {
+            padding: 2rem 0;
+        }
+        
+        .main-header {
+            padding: 2rem 1rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .stImage > img {
+            height: 120px !important;
+        }
+        
+        .destination-card .stImage {
+            height: 120px !important;
+        }
+        
+        div[data-testid="stImage"] {
+            height: 120px !important;
+        }
+        
+        .card-content {
+            padding: 0.8rem;
+        }
+        
+        .hero-section h1 {
+            font-size: 2rem !important;
+        }
+        
+        .hero-section p {
+            font-size: 1rem !important;
+        }
     }
     
     /* Hide carousel text overlay */
@@ -214,31 +274,70 @@ st.markdown("""
         opacity: 0 !important;
     }
     
-    /* Fix carousel navigation buttons positioning */
+    /* Fix carousel navigation buttons positioning - responsive */
     [data-testid="stCarousel"] .carousel-control-prev,
     [data-testid="stCarousel"] .carousel-control-next {
         top: 50% !important;
         transform: translateY(-50%) !important;
-        width: 40px !important;
-        height: 40px !important;
-        background-color: rgba(0, 0, 0, 0.5) !important;
+        width: 35px !important;
+        height: 35px !important;
+        background-color: rgba(0, 0, 0, 0.6) !important;
         border-radius: 50% !important;
         z-index: 10 !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
     }
     
     [data-testid="stCarousel"] .carousel-control-prev {
-        left: 10px !important;
+        left: 8px !important;
     }
     
     [data-testid="stCarousel"] .carousel-control-next {
-        right: 10px !important;
+        right: 8px !important;
     }
     
     /* Style carousel navigation icons */
     [data-testid="stCarousel"] .carousel-control-prev-icon,
     [data-testid="stCarousel"] .carousel-control-next-icon {
-        width: 20px !important;
-        height: 20px !important;
+        width: 18px !important;
+        height: 18px !important;
+        filter: brightness(0) invert(1) !important;
+    }
+    
+    /* Mobile responsive navigation buttons */
+    @media (max-width: 768px) {
+        [data-testid="stCarousel"] .carousel-control-prev,
+        [data-testid="stCarousel"] .carousel-control-next {
+            width: 30px !important;
+            height: 30px !important;
+        }
+        
+        [data-testid="stCarousel"] .carousel-control-prev {
+            left: 5px !important;
+        }
+        
+        [data-testid="stCarousel"] .carousel-control-next {
+            right: 5px !important;
+        }
+        
+        [data-testid="stCarousel"] .carousel-control-prev-icon,
+        [data-testid="stCarousel"] .carousel-control-next-icon {
+            width: 15px !important;
+            height: 15px !important;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        [data-testid="stCarousel"] .carousel-control-prev,
+        [data-testid="stCarousel"] .carousel-control-next {
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        [data-testid="stCarousel"] .carousel-control-prev-icon,
+        [data-testid="stCarousel"] .carousel-control-next-icon {
+            width: 12px !important;
+            height: 12px !important;
+        }
     }
     
     /* Remove any text overlay elements in streamlit-carousel */
@@ -246,23 +345,54 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Navigation button styling for native carousel */
+    /* Navigation button styling for native carousel - responsive */
     .carousel-nav-container {
         margin: 0.5rem 0 !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         gap: 1rem !important;
+        flex-wrap: wrap !important;
     }
     
     .carousel-nav-container .stButton {
         margin: 0 !important;
+        flex: none !important;
     }
     
     .carousel-nav-container .stButton button {
         padding: 0.5rem 1rem !important;
         min-height: 2.5rem !important;
         border-radius: 20px !important;
+        font-size: 0.9rem !important;
+        min-width: 80px !important;
+    }
+    
+    /* Mobile navigation adjustments */
+    @media (max-width: 768px) {
+        .carousel-nav-container {
+            gap: 0.5rem !important;
+        }
+        
+        .carousel-nav-container .stButton button {
+            padding: 0.4rem 0.8rem !important;
+            min-height: 2.2rem !important;
+            font-size: 0.8rem !important;
+            min-width: 70px !important;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .carousel-nav-container {
+            gap: 0.3rem !important;
+        }
+        
+        .carousel-nav-container .stButton button {
+            padding: 0.3rem 0.6rem !important;
+            min-height: 2rem !important;
+            font-size: 0.75rem !important;
+            min-width: 60px !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -334,13 +464,18 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         st.error(f"❌ Tidak dapat terhubung ke API: {str(e)}")
         return []
 
-def resize_image_for_carousel(img_path, target_width=400, target_height=250):
-    """Resize and crop image to standard carousel size"""
+def resize_image_for_carousel(img_path, target_width=400, target_height=200, mobile=False):
+    """Resize and crop image to standard carousel size with mobile optimization"""
     try:
         with Image.open(img_path) as img:
             # Convert to RGB if necessary
             if img.mode != 'RGB':
                 img = img.convert('RGB')
+            
+            # Adjust target size for mobile
+            if mobile:
+                target_width = min(300, target_width)
+                target_height = min(150, target_height)
             
             # Calculate aspect ratios
             img_ratio = img.width / img.height
@@ -365,11 +500,18 @@ def resize_image_for_carousel(img_path, target_width=400, target_height=250):
                 top = (new_height - target_height) // 2
                 img = img.crop((0, top, target_width, top + target_height))
             
-            # Convert to base64 for embedding
+            # Apply sharpening for better mobile display
+            if mobile:
+                from PIL import ImageEnhance
+                enhancer = ImageEnhance.Sharpness(img)
+                img = enhancer.enhance(1.1)
+            
+            # Convert to base64 for embedding with optimized quality
             import base64
             import io
             img_buffer = io.BytesIO()
-            img.save(img_buffer, format='JPEG', quality=85)
+            quality = 75 if mobile else 85
+            img.save(img_buffer, format='JPEG', quality=quality, optimize=True)
             img_base64 = base64.b64encode(img_buffer.getvalue()).decode()
             return f"data:image/jpeg;base64,{img_base64}"
             
@@ -378,10 +520,18 @@ def resize_image_for_carousel(img_path, target_width=400, target_height=250):
         return None
 
 def display_image_carousel(images, destination_id):
-    """Display image carousel for destination with fallback to native implementation"""
+    """Display image carousel for destination with responsive mobile optimization"""
     if not images:
-        st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+        st.image("https://via.placeholder.com/400x200/667eea/white?text=No+Image", use_container_width=True)
         return
+    
+    # Detect mobile using viewport width (simplified approach)
+    # In Streamlit, we'll use a heuristic based on available space
+    try:
+        # Check if we're likely on mobile based on container width
+        is_mobile_like = st.session_state.get('mobile_view', False)
+    except:
+        is_mobile_like = False
     
     # Filter existing images and resize them
     valid_images = []
@@ -390,13 +540,13 @@ def display_image_carousel(images, destination_id):
     for img_path in images:
         if os.path.exists(img_path):
             valid_images.append(img_path)
-            # Pre-resize for consistent sizing
-            resized = resize_image_for_carousel(img_path)
+            # Pre-resize for consistent sizing with mobile optimization
+            resized = resize_image_for_carousel(img_path, mobile=is_mobile_like)
             if resized:
                 resized_images.append(resized)
     
     if not valid_images:
-        st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+        st.image("https://via.placeholder.com/400x200/667eea/white?text=No+Image", use_container_width=True)
         return
     
     # If only one image, display it directly with consistent size
@@ -404,14 +554,15 @@ def display_image_carousel(images, destination_id):
         try:
             image = Image.open(valid_images[0])
             # Resize to standard carousel size
-            resized = resize_image_for_carousel(valid_images[0])
+            resized = resize_image_for_carousel(valid_images[0], mobile=is_mobile_like)
             if resized:
                 st.image(resized, use_container_width=True)
             else:
-                # Fallback with consistent height
-                st.image(image, use_container_width=True, height=250)
+                # Fallback with responsive height
+                height = 150 if is_mobile_like else 200
+                st.image(image, use_container_width=True)
         except:
-            st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+            st.image("https://via.placeholder.com/400x200/667eea/white?text=No+Image", use_container_width=True)
         return
     
     # Use streamlit-carousel if available, otherwise fallback to native
@@ -427,13 +578,17 @@ def display_image_carousel(images, destination_id):
                 })
             
             if carousel_items:
+                # Responsive height based on mobile detection
+                carousel_height = 150 if is_mobile_like else 200
+                
                 carousel(
                     items=carousel_items,
                     width=1.0,
-                    height=250,
+                    height=carousel_height,
                     key=f"carousel_{destination_id}_{random.randint(1000, 9999)}",
-                    container_height=250,
-                    interval=4000,  # 4 second auto-advance
+                    container_height=carousel_height,
+                    interval=5000,  # 5 second auto-advance for better mobile experience
+                    wrap=True,  # Enable wrap-around
                 )
                 return
         except Exception as e:
@@ -441,49 +596,65 @@ def display_image_carousel(images, destination_id):
             print(f"Carousel error: {e}")
             pass
     
-    # Native Streamlit implementation (fallback) with consistent sizing
+    # Native Streamlit implementation (fallback) with responsive sizing
     carousel_key = f"carousel_{destination_id}"
     if carousel_key not in st.session_state:
         st.session_state[carousel_key] = 0
     
+    # Auto-advance timer for better user experience
+    timer_key = f"carousel_timer_{destination_id}"
+    if timer_key not in st.session_state:
+        st.session_state[timer_key] = 0
+    
     # Create container for image and navigation
     current_idx = st.session_state[carousel_key]
     
-    # Display current image with consistent size
+    # Display current image with responsive sizing
     try:
         if current_idx < len(resized_images):
             # Use pre-resized image
             st.image(resized_images[current_idx], use_container_width=True)
         else:
             # Fallback: resize on the fly
-            resized = resize_image_for_carousel(valid_images[current_idx])
+            resized = resize_image_for_carousel(valid_images[current_idx], mobile=is_mobile_like)
             if resized:
                 st.image(resized, use_container_width=True)
             else:
                 image = Image.open(valid_images[current_idx])
                 st.image(image, use_container_width=True)
     except:
-        st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+        st.image("https://via.placeholder.com/400x200/667eea/white?text=No+Image", use_container_width=True)
     
-    # Navigation and counter with better styling
+    # Navigation and counter with responsive styling
     st.markdown('<div class="carousel-nav-container">', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col1:
-        if st.button("⬅️ Prev", key=f"prev_{destination_id}", help="Gambar sebelumnya"):
+        if st.button("⬅️", key=f"prev_{destination_id}", help="Gambar sebelumnya"):
             st.session_state[carousel_key] = (current_idx - 1) % len(valid_images)
+            st.session_state[timer_key] = 0  # Reset timer
             st.rerun()
     
     with col2:
-        st.markdown(f"<div style='text-align: center; padding: 0.5rem; font-size: 0.9rem; color: #667eea; font-weight: bold;'>{current_idx + 1} / {len(valid_images)}</div>", unsafe_allow_html=True)
+        # More compact counter for mobile
+        counter_style = "font-size: 0.8rem;" if is_mobile_like else "font-size: 0.9rem;"
+        st.markdown(f"<div style='text-align: center; padding: 0.3rem; {counter_style} color: #667eea; font-weight: bold;'>{current_idx + 1} / {len(valid_images)}</div>", unsafe_allow_html=True)
     
     with col3:
-        if st.button("Next ➡️", key=f"next_{destination_id}", help="Gambar selanjutnya"):
+        if st.button("➡️", key=f"next_{destination_id}", help="Gambar selanjutnya"):
             st.session_state[carousel_key] = (current_idx + 1) % len(valid_images)
+            st.session_state[timer_key] = 0  # Reset timer
             st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Add touch/swipe indicators for mobile
+    if is_mobile_like and len(valid_images) > 1:
+        st.markdown(
+            "<div style='text-align: center; font-size: 0.7rem; color: #999; margin-top: 0.2rem;'>👆 Gunakan tombol navigasi</div>", 
+            unsafe_allow_html=True
+        )
 
 def display_destination_card(destination, col):
     """Display a destination card with image carousel"""
@@ -630,29 +801,37 @@ def homepage():
             recommendations = recommendations[:5]
     
     if recommendations:
-        # Display 5 top-rated destinations
+        # Display 5 top-rated destinations with responsive layout
         st.markdown(f"<h4 style='text-align: center; color: #2c3e50; margin: 1rem 0;'>🏆 Top {len(recommendations)} Rating Tertinggi di {selected_city}</h4>", unsafe_allow_html=True)
         
-        # Special layout for 5 items: 2 on top, 3 on bottom
-        if len(recommendations) >= 3:
-            # First row - 2 cards
-            cols = st.columns(2)
-            for i in range(min(2, len(recommendations))):
-                display_destination_card(recommendations[i], cols[i])
-            
-            # Second row - 3 cards (if we have more than 2)
-            if len(recommendations) > 2:
-                cols = st.columns(3)
-                for i in range(2, min(5, len(recommendations))):
-                    display_destination_card(recommendations[i], cols[i-2])
+        # Responsive layout
+        is_mobile = st.session_state.get('mobile_view', False)
+        
+        if is_mobile:
+            # Mobile: single column layout
+            for rec in recommendations:
+                display_destination_card(rec, st.container())
         else:
-            # Fallback for less than 3 recommendations
-            cols_per_row = 2
-            for i in range(0, len(recommendations), cols_per_row):
-                cols = st.columns(cols_per_row)
-                for j, rec in enumerate(recommendations[i:i+cols_per_row]):
-                    if j < len(cols):
-                        display_destination_card(rec, cols[j])
+            # Desktop: Special layout for 5 items: 2 on top, 3 on bottom
+            if len(recommendations) >= 3:
+                # First row - 2 cards
+                cols = st.columns(2)
+                for i in range(min(2, len(recommendations))):
+                    display_destination_card(recommendations[i], cols[i])
+                
+                # Second row - 3 cards (if we have more than 2)
+                if len(recommendations) > 2:
+                    cols = st.columns(3)
+                    for i in range(2, min(5, len(recommendations))):
+                        display_destination_card(recommendations[i], cols[i-2])
+            else:
+                # Fallback for less than 3 recommendations
+                cols_per_row = 2
+                for i in range(0, len(recommendations), cols_per_row):
+                    cols = st.columns(cols_per_row)
+                    for j, rec in enumerate(recommendations[i:i+cols_per_row]):
+                        if j < len(cols):
+                            display_destination_card(rec, cols[j])
         
         # Show more button
         st.markdown("---")
@@ -748,8 +927,10 @@ def recommendations_page():
         if recommendations:
             st.markdown(f"<h2 style='text-align: center; color: #2c3e50; margin: 2rem 0;'>✨ {len(recommendations)} Rekomendasi Terbaik Untuk Anda</h2>", unsafe_allow_html=True)
             
-            # Display recommendations in grid
-            cols_per_row = 3
+            # Responsive grid layout
+            is_mobile = st.session_state.get('mobile_view', False)
+            cols_per_row = 1 if is_mobile else 3  # Single column for mobile, 3 for desktop
+            
             for i in range(0, len(recommendations), cols_per_row):
                 cols = st.columns(cols_per_row)
                 for j, recommendation in enumerate(recommendations[i:i+cols_per_row]):
@@ -890,8 +1071,10 @@ def gallery_page():
         # Display destinations
         st.markdown(f"<h3 style='text-align: center; color: #2c3e50; margin: 2rem 0;'>🏛️ Destinasi Halaman {st.session_state.gallery_page_num}</h3>", unsafe_allow_html=True)
         
-        # Display in grid (4 columns for gallery)
-        cols_per_row = 4
+        # Responsive grid layout based on screen size
+        is_mobile = st.session_state.get('mobile_view', False)
+        cols_per_row = 1 if is_mobile else 4  # Single column for mobile, 4 for desktop
+        
         for i in range(0, len(page_destinations), cols_per_row):
             cols = st.columns(cols_per_row)
             for j, destination in enumerate(page_destinations[i:i+cols_per_row]):
@@ -945,6 +1128,28 @@ def main():
     # Initialize current page in session state
     if 'current_page' not in st.session_state:
         st.session_state.current_page = "🏠 Beranda"
+    
+    # Add mobile detection JavaScript
+    mobile_detection_js = """
+    <script>
+    function detectMobile() {
+        const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (window.parent && window.parent.postMessage) {
+            window.parent.postMessage({
+                type: 'streamlit:setComponentValue',
+                value: {mobile_view: isMobile}
+            }, '*');
+        }
+    }
+    
+    // Run on load and resize
+    detectMobile();
+    window.addEventListener('resize', detectMobile);
+    </script>
+    """
+    
+    # Inject the mobile detection script
+    st.components.v1.html(mobile_detection_js, height=0)
     
     # Navigation
     with st.container():
