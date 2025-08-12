@@ -152,6 +152,90 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
+    
+    .image-carousel {
+        position: relative;
+        width: 100%;
+        height: 250px;
+        overflow: hidden;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .carousel-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .carousel-image {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        display: none;
+    }
+    
+    .carousel-image.active {
+        display: block;
+    }
+    
+    .carousel-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.5);
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        font-size: 18px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+    
+    .carousel-nav:hover {
+        background: rgba(0,0,0,0.8);
+    }
+    
+    .carousel-prev {
+        left: 10px;
+    }
+    
+    .carousel-next {
+        right: 10px;
+    }
+    
+    .carousel-dots {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+    }
+    
+    .carousel-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .carousel-dot.active {
+        background: white;
+    }
+    
+    .image-counter {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -162,27 +246,41 @@ def format_price(price):
         return "Gratis"
     return f"Rp {price:,.0f}".replace(",", ".")
 
-def get_image_path(place_name, place_id=None):
-    """Get image path for a destination"""
+def get_destination_images(place_name, place_id=None, max_images=5):
+    """Get multiple image paths for a destination"""
     image_base = "/app/image"
+    images = []
     
     if place_id:
         folder_pattern = f"{place_id:03d}_"
         for folder in os.listdir(image_base) if os.path.exists(image_base) else []:
             if folder.startswith(folder_pattern):
-                images = [f for f in os.listdir(os.path.join(image_base, folder)) if f.endswith('.jpg')]
-                if images:
-                    return os.path.join(image_base, folder, images[0])
+                folder_images = [f for f in os.listdir(os.path.join(image_base, folder)) if f.endswith('.jpg')]
+                if folder_images:
+                    # Sort to get consistent order
+                    folder_images.sort()
+                    for img in folder_images[:max_images]:
+                        images.append(os.path.join(image_base, folder, img))
+                    break
     
-    place_normalized = place_name.replace(" ", "_").replace("(", "").replace(")", "")
-    if os.path.exists(image_base):
-        for folder in os.listdir(image_base):
-            if place_normalized.lower() in folder.lower():
-                images = [f for f in os.listdir(os.path.join(image_base, folder)) if f.endswith('.jpg')]
-                if images:
-                    return os.path.join(image_base, folder, images[0])
+    if not images:
+        place_normalized = place_name.replace(" ", "_").replace("(", "").replace(")", "")
+        if os.path.exists(image_base):
+            for folder in os.listdir(image_base):
+                if place_normalized.lower() in folder.lower():
+                    folder_images = [f for f in os.listdir(os.path.join(image_base, folder)) if f.endswith('.jpg')]
+                    if folder_images:
+                        folder_images.sort()
+                        for img in folder_images[:max_images]:
+                            images.append(os.path.join(image_base, folder, img))
+                        break
     
-    return None
+    return images if images else []
+
+def get_image_path(place_name, place_id=None):
+    """Get single image path for a destination (backward compatibility)"""
+    images = get_destination_images(place_name, place_id, 1)
+    return images[0] if images else None
 
 def get_recommendations_from_api(location=None, min_rating=None, price_category=None, category=None, top_n=10):
     """Fetch recommendations from API"""
@@ -208,20 +306,86 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         st.error(f"❌ Tidak dapat terhubung ke API: {str(e)}")
         return []
 
+def display_image_carousel(images, destination_id):
+    """Display image carousel for destination"""
+    if not images:
+        st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+        return
+    
+    # Create unique ID for this carousel
+    carousel_id = f"carousel_{destination_id}_{random.randint(1000, 9999)}"
+    
+    # HTML for image carousel
+    carousel_html = f"""
+    <div class="image-carousel" id="{carousel_id}">
+        <div class="carousel-container">
+    """
+    
+    # Add images
+    for i, img_path in enumerate(images):
+        if os.path.exists(img_path):
+            # Convert to base64 for embedding
+            try:
+                with open(img_path, "rb") as img_file:
+                    import base64
+                    img_base64 = base64.b64encode(img_file.read()).decode()
+                active_class = "active" if i == 0 else ""
+                carousel_html += f"""
+                <img src="data:image/jpeg;base64,{img_base64}" 
+                     class="carousel-image {active_class}" 
+                     alt="Destination Image {i+1}">
+                """
+            except:
+                continue
+    
+    # Add counter
+    carousel_html += f"""
+            <div class="image-counter">
+                <span id="{carousel_id}_counter">1</span> / {len(images)}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    (function() {{
+        let currentSlide_{carousel_id.replace('-', '_')} = 0;
+        const images_{carousel_id.replace('-', '_')} = document.querySelectorAll('#{carousel_id} .carousel-image');
+        const counter_{carousel_id.replace('-', '_')} = document.querySelector('#{carousel_id}_counter');
+        const totalImages_{carousel_id.replace('-', '_')} = images_{carousel_id.replace('-', '_')}.length;
+        
+        function showSlide_{carousel_id.replace('-', '_')}(index) {{
+            images_{carousel_id.replace('-', '_')}.forEach((img, i) => {{
+                img.classList.toggle('active', i === index);
+            }});
+            if (counter_{carousel_id.replace('-', '_')}) {{
+                counter_{carousel_id.replace('-', '_')}.textContent = index + 1;
+            }}
+        }}
+        
+        // Auto-advance slides every 3 seconds
+        setInterval(() => {{
+            currentSlide_{carousel_id.replace('-', '_')} = (currentSlide_{carousel_id.replace('-', '_')} + 1) % totalImages_{carousel_id.replace('-', '_')};
+            showSlide_{carousel_id.replace('-', '_')}(currentSlide_{carousel_id.replace('-', '_')});
+        }}, 3000);
+    }})();
+    </script>
+    """
+    
+    st.markdown(carousel_html, unsafe_allow_html=True)
+
 def display_destination_card(destination, col):
-    """Display a destination card"""
+    """Display a destination card with image carousel"""
     with col:
         with st.container():
-            image_path = get_image_path(destination.get("Place_Name", ""), destination.get("Place_Id"))
+            # Get multiple images for carousel
+            images = get_destination_images(
+                destination.get("Place_Name", ""), 
+                destination.get("Place_Id"), 
+                max_images=5
+            )
             
-            if image_path and os.path.exists(image_path):
-                try:
-                    image = Image.open(image_path)
-                    st.image(image, use_container_width=True, caption="")
-                except Exception:
-                    st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
-            else:
-                st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+            # Display carousel
+            display_image_carousel(images, destination.get("Place_Id", 0))
             
             st.markdown(f"""
             <div class="card-content">
@@ -344,35 +508,27 @@ def homepage():
         recommendations = get_recommendations_from_api(
             location=selected_city,
             min_rating=4.0,
-            top_n=5
+            top_n=6
         )
     
     if recommendations:
-        # Display 5 recommendations in special layout
-        if len(recommendations) >= 5:
-            # First row - 2 cards
-            cols = st.columns(2)
-            for i in range(2):
-                display_destination_card(recommendations[i], cols[i])
-            
-            # Second row - 3 cards  
-            cols = st.columns(3)
-            for i in range(3):
-                display_destination_card(recommendations[i+2], cols[i])
-        else:
-            # Fallback to grid layout
-            cols_per_row = 3
-            for i in range(0, len(recommendations), cols_per_row):
-                cols = st.columns(cols_per_row)
-                for j, rec in enumerate(recommendations[i:i+cols_per_row]):
+        # Display 6 recommendations in 3x2 grid layout
+        st.markdown(f"<h4 style='text-align: center; color: #2c3e50; margin: 1rem 0;'>🏆 {len(recommendations)} Destinasi Terpilih</h4>", unsafe_allow_html=True)
+        
+        # Display in rows of 3
+        cols_per_row = 3
+        for i in range(0, len(recommendations), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for j, rec in enumerate(recommendations[i:i+cols_per_row]):
+                if j < len(cols):
                     display_destination_card(rec, cols[j])
         
         # Show more button
         st.markdown("---")
         col_center = st.columns([2, 1, 2])[1]
         with col_center:
-            if st.button("🔍 Lihat Lebih Banyak", use_container_width=True):
-                st.session_state.current_page = "🔍 Cari Rekomendasi"
+            if st.button("🖼️ Lihat Galeri Lengkap", use_container_width=True):
+                st.session_state.current_page = "🖼️ Galeri"
                 st.rerun()
     else:
         st.warning(f"Tidak ada rekomendasi ditemukan untuk wilayah {selected_city}.")
@@ -485,6 +641,173 @@ def recommendations_page():
         # Turn off auto search after first load
         st.session_state.auto_search = False
 
+def gallery_page():
+    """Gallery page showing all destinations"""
+    st.markdown("""
+    <div class="hero-section">
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: #2c3e50;">🖼️ Galeri Wisata Indonesia</h1>
+        <p style="font-size: 1.1rem; color: #7f8c8d; max-width: 600px; margin: 0 auto;">
+            Jelajahi semua destinasi wisata terbaik di Indonesia
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Filters
+    st.markdown('<div class="search-container">', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        city_options = ["Semua Kota"] + [f"{city} ({info['destinations']})" for city, info in INDONESIAN_CITIES.items()]
+        city_display = st.selectbox(
+            "🏙️ Filter Kota",
+            city_options,
+            help="Filter destinasi berdasarkan kota"
+        )
+        city_filter = city_display.split(" (")[0] if city_display != "Semua Kota" else ""
+    
+    with col2:
+        category_filter = st.selectbox(
+            "🎯 Filter Kategori", 
+            ["Semua Kategori", "Budaya", "Taman Hiburan", "Cagar Alam", "Bahari", "Pusat Perbelanjaan", "Tempat Ibadah"],
+            help="Pilih jenis wisata yang diminati"
+        )
+        if category_filter == "Semua Kategori":
+            category_filter = ""
+    
+    with col3:
+        min_rating = st.slider(
+            "⭐ Rating Minimal", 
+            min_value=3.0, max_value=5.0, value=3.0, step=0.1,
+            help="Filter berdasarkan rating minimal"
+        )
+    
+    # Sort options
+    col1, col2 = st.columns(2)
+    with col1:
+        sort_by = st.selectbox(
+            "📊 Urutkan berdasarkan",
+            ["Rating (Tertinggi)", "Rating (Terendah)", "Nama (A-Z)", "Nama (Z-A)", "Harga (Terendah)", "Harga (Tertinggi)"]
+        )
+    
+    with col2:
+        per_page = st.selectbox(
+            "📄 Hasil per halaman",
+            [12, 24, 48, 100],
+            index=1
+        )
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Get all destinations
+    with st.spinner("🔄 Memuat galeri destinasi..."):
+        # Get a large number of destinations
+        all_destinations = get_recommendations_from_api(
+            location=city_filter if city_filter else None,
+            min_rating=min_rating,
+            category=category_filter if category_filter else None,
+            top_n=1000  # Get maximum available
+        )
+    
+    if all_destinations:
+        # Sort results
+        if sort_by == "Rating (Tertinggi)":
+            all_destinations.sort(key=lambda x: x.get('Rating', 0), reverse=True)
+        elif sort_by == "Rating (Terendah)":
+            all_destinations.sort(key=lambda x: x.get('Rating', 0))
+        elif sort_by == "Nama (A-Z)":
+            all_destinations.sort(key=lambda x: x.get('Place_Name', ''))
+        elif sort_by == "Nama (Z-A)":
+            all_destinations.sort(key=lambda x: x.get('Place_Name', ''), reverse=True)
+        elif sort_by == "Harga (Terendah)":
+            all_destinations.sort(key=lambda x: x.get('Price', 0))
+        elif sort_by == "Harga (Tertinggi)":
+            all_destinations.sort(key=lambda x: x.get('Price', 0), reverse=True)
+        
+        # Pagination
+        total_destinations = len(all_destinations)
+        total_pages = (total_destinations + per_page - 1) // per_page
+        
+        if 'gallery_page_num' not in st.session_state:
+            st.session_state.gallery_page_num = 1
+        
+        # Page navigation
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col1:
+            if st.button("⬅️ Sebelumnya", disabled=st.session_state.gallery_page_num <= 1):
+                st.session_state.gallery_page_num -= 1
+                st.rerun()
+        
+        with col2:
+            st.markdown(f"""
+            <div style="text-align: center; padding: 0.5rem;">
+                <strong>Halaman {st.session_state.gallery_page_num} dari {total_pages}</strong><br>
+                <small>Menampilkan {total_destinations} destinasi</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            if st.button("Selanjutnya ➡️", disabled=st.session_state.gallery_page_num >= total_pages):
+                st.session_state.gallery_page_num += 1
+                st.rerun()
+        
+        # Calculate slice for current page
+        start_idx = (st.session_state.gallery_page_num - 1) * per_page
+        end_idx = start_idx + per_page
+        page_destinations = all_destinations[start_idx:end_idx]
+        
+        # Display destinations
+        st.markdown(f"<h3 style='text-align: center; color: #2c3e50; margin: 2rem 0;'>🏛️ Destinasi Halaman {st.session_state.gallery_page_num}</h3>", unsafe_allow_html=True)
+        
+        # Display in grid (4 columns for gallery)
+        cols_per_row = 4
+        for i in range(0, len(page_destinations), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for j, destination in enumerate(page_destinations[i:i+cols_per_row]):
+                if j < len(cols):
+                    display_destination_card(destination, cols[j])
+        
+        # Bottom pagination
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col1:
+            if st.button("⬅️ Sebelumnya", key="bottom_prev", disabled=st.session_state.gallery_page_num <= 1):
+                st.session_state.gallery_page_num -= 1
+                st.rerun()
+        
+        with col2:
+            # Page selector
+            page_options = list(range(1, total_pages + 1))
+            selected_page = st.selectbox(
+                "Pilih halaman:",
+                page_options,
+                index=st.session_state.gallery_page_num - 1,
+                key="page_selector"
+            )
+            if selected_page != st.session_state.gallery_page_num:
+                st.session_state.gallery_page_num = selected_page
+                st.rerun()
+        
+        with col3:
+            if st.button("Selanjutnya ➡️", key="bottom_next", disabled=st.session_state.gallery_page_num >= total_pages):
+                st.session_state.gallery_page_num += 1
+                st.rerun()
+                
+    else:
+        st.warning("🔍 Tidak ada destinasi ditemukan dengan kriteria yang dipilih.")
+        
+        # Show available stats
+        st.markdown("### 📊 Statistik Dataset")
+        cols = st.columns(len(INDONESIAN_CITIES))
+        
+        for i, (city, info) in enumerate(INDONESIAN_CITIES.items()):
+            with cols[i]:
+                st.metric(
+                    label=f"🏙️ {city}",
+                    value=f"{info['destinations']} destinasi",
+                    delta=info['region']
+                )
+
 def main():
     """Main application with navigation"""
     
@@ -495,12 +818,14 @@ def main():
     # Navigation
     with st.container():
         # Get the current page index for option_menu
-        current_index = 0 if st.session_state.current_page == "🏠 Beranda" else 1
+        current_index = 0 if st.session_state.current_page == "🏠 Beranda" else \
+                       1 if st.session_state.current_page == "🔍 Cari Rekomendasi" else \
+                       2 if st.session_state.current_page == "🖼️ Galeri" else 0
         
         selected = option_menu(
             menu_title=None,
-            options=["🏠 Beranda", "🔍 Cari Rekomendasi"],
-            icons=["house", "search"],
+            options=["🏠 Beranda", "🔍 Cari Rekomendasi", "🖼️ Galeri"],
+            icons=["house", "search", "images"],
             menu_icon="cast",
             default_index=current_index,
             orientation="horizontal",
@@ -522,6 +847,8 @@ def main():
         homepage()
     elif st.session_state.current_page == "🔍 Cari Rekomendasi":
         recommendations_page()
+    elif st.session_state.current_page == "🖼️ Galeri":
+        gallery_page()
     
     # Footer with real data stats
     total_destinations = sum(city['destinations'] for city in INDONESIAN_CITIES.values())
