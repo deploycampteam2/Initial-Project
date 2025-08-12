@@ -11,7 +11,8 @@
       "Bash(git remote set-url:*)",
       "Bash(gh repo sync:*)",
       "Bash(git config:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
