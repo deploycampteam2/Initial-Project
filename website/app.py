@@ -7,7 +7,7 @@ from PIL import Image
 import random
 from typing import List, Dict, Optional
 from streamlit_option_menu import option_menu
-from streamlit_image_carousel import image_carousel
+from streamlit_carousel import carousel
 import math
 
 # Page config
@@ -224,37 +224,44 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         return []
 
 def display_image_carousel(images, destination_id):
-    """Display image carousel for destination using streamlit-image-carousel"""
+    """Display image carousel for destination using streamlit-carousel"""
     if not images:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
     
-    # Convert file paths to data URLs for carousel
-    carousel_images = []
+    # Filter existing images and prepare for carousel
+    carousel_items = []
     for img_path in images:
         if os.path.exists(img_path):
             try:
-                # Convert to base64 data URL
+                # Convert to base64 for carousel
                 with open(img_path, "rb") as img_file:
                     import base64
                     img_base64 = base64.b64encode(img_file.read()).decode()
-                    data_url = f"data:image/jpeg;base64,{img_base64}"
-                    carousel_images.append(data_url)
+                    carousel_items.append({
+                        "title": f"Gambar {len(carousel_items) + 1}",
+                        "text": "",
+                        "img": f"data:image/jpeg;base64,{img_base64}"
+                    })
             except Exception as e:
                 continue
     
-    if carousel_images:
-        # Use streamlit-image-carousel
-        image_carousel(
-            images=carousel_images,
-            width=1.0,
-            wrap=True,
-            autoplay=True,
-            interval=3000,
-            key=f"carousel_{destination_id}_{random.randint(1000, 9999)}"
-        )
-    else:
+    if not carousel_items:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+        return
+    
+    # If only one image, display it directly
+    if len(carousel_items) == 1:
+        st.image(carousel_items[0]["img"], use_container_width=True)
+        return
+    
+    # Use streamlit-carousel
+    carousel(
+        items=carousel_items,
+        width=1.0,
+        height=250,
+        key=f"carousel_{destination_id}_{random.randint(1000, 9999)}"
+    )
 
 def display_destination_card(destination, col):
     """Display a destination card with image carousel"""
