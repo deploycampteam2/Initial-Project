@@ -29,7 +29,8 @@
       "Bash(python:*)",
       "Bash(sed:*)",
       "WebFetch(domain:pypi.org)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(docker restart:*)"
     ],
     "deny": []
   }
