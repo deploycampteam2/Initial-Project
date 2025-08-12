@@ -1,13 +1,8 @@
 import streamlit as st
-import pandas as pd
 import requests
-import json
 import os
 from PIL import Image
-import random
-from typing import List, Dict, Optional
 from streamlit_option_menu import option_menu
-import math
 
 # Carousel removed for production stability
 
@@ -155,47 +150,81 @@ st.markdown("""
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
     
-    /* Responsive image sizing for carousels */
-    .stImage > img {
+    /* Consistent image sizing for all destination images */
+    .destination-card .stImage > img {
         height: 200px !important;
         object-fit: cover !important;
-        border-radius: 10px;
+        border-radius: 10px 10px 0 0;
         width: 100% !important;
     }
     
     .destination-card .stImage {
         height: 200px !important;
         overflow: hidden !important;
-        border-radius: 10px;
+        border-radius: 10px 10px 0 0;
         width: 100% !important;
+        position: relative;
     }
     
-    /* Carousel container consistency */
-    div[data-testid="stImage"] {
+    /* Container consistency */
+    .destination-card div[data-testid="stImage"] {
         height: 200px !important;
         width: 100% !important;
+        border-radius: 10px 10px 0 0;
+    }
+    
+    /* City badge overlay on image */
+    .city-overlay {
+        display: inline-block;
+        background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        margin-left: 10px;
+    }
+    
+    /* Ensure card content has proper spacing */
+    .destination-card .card-content {
+        padding: 1rem;
+    }
+    
+    /* Description height consistency */
+    .destination-card .description-text {
+        height: 3.4rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
     }
     
     /* Mobile responsive adjustments */
     @media (max-width: 768px) {
-        .stImage > img {
-            height: 150px !important;
+        .destination-card .stImage > img {
+            height: 160px !important;
         }
         
         .destination-card .stImage {
-            height: 150px !important;
+            height: 160px !important;
         }
         
-        div[data-testid="stImage"] {
-            height: 150px !important;
+        .destination-card div[data-testid="stImage"] {
+            height: 160px !important;
         }
         
         .destination-card {
             margin-bottom: 1rem;
         }
         
-        .card-content {
-            padding: 1rem;
+        .destination-card .card-content {
+            padding: 0.8rem;
+        }
+        
+        .city-overlay {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
         }
         
         .hero-section {
@@ -205,23 +234,33 @@ st.markdown("""
         .main-header {
             padding: 2rem 1rem;
         }
+        
+        .description-text {
+            height: 2.8rem !important;
+            -webkit-line-clamp: 2 !important;
+        }
     }
     
     @media (max-width: 480px) {
-        .stImage > img {
-            height: 120px !important;
+        .destination-card .stImage > img {
+            height: 140px !important;
         }
         
         .destination-card .stImage {
-            height: 120px !important;
+            height: 140px !important;
         }
         
-        div[data-testid="stImage"] {
-            height: 120px !important;
+        .destination-card div[data-testid="stImage"] {
+            height: 140px !important;
         }
         
-        .card-content {
+        .destination-card .card-content {
             padding: 0.8rem;
+        }
+        
+        .city-overlay {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.5rem;
         }
         
         .hero-section h1 {
@@ -230,6 +269,12 @@ st.markdown("""
         
         .hero-section p {
             font-size: 1rem !important;
+        }
+        
+        .description-text {
+            height: 2.4rem !important;
+            font-size: 0.8rem !important;
+            -webkit-line-clamp: 2 !important;
         }
     }
     
@@ -313,68 +358,87 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         st.error(f"❌ Tidak dapat terhubung ke API: {str(e)}")
         return []
 
-def display_destination_image(destination_name, destination_id):
-    """Display single main image for destination (production-safe)"""
+def display_destination_image(destination_name, destination_id, city_name=""):
+    """Display single main image for destination with consistent sizing"""
     # Get first image for the destination
     image_path = get_image_path(destination_name, destination_id)
     
     if image_path and os.path.exists(image_path):
         try:
-            # Display the image with consistent responsive sizing
+            # Display the image with consistent sizing and city overlay
             with Image.open(image_path) as img:
                 # Convert to RGB if necessary
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 
-                # Display with proper styling
-                st.image(
-                    img, 
-                    use_container_width=True,
-                    caption=f"📍 {destination_name}"
-                )
+                # Resize to consistent dimensions
+                img = img.resize((400, 200), Image.Resampling.LANCZOS)
+                
+                # Display without caption
+                st.image(img, use_container_width=True)
+                
         except Exception as e:
             print(f"Error displaying image {image_path}: {e}")
+            # Fallback placeholder
             st.image(
                 "https://via.placeholder.com/400x200/667eea/white?text=No+Image", 
-                use_container_width=True,
-                caption=f"📍 {destination_name}"
+                use_container_width=True
             )
     else:
         # Fallback placeholder image
         st.image(
             "https://via.placeholder.com/400x200/667eea/white?text=No+Image", 
-            use_container_width=True,
-            caption=f"📍 {destination_name}"
+            use_container_width=True
         )
 
 def display_destination_card(destination, col):
-    """Display a destination card with single main image"""
+    """Display a destination card with reorganized layout"""
     with col:
-        with st.container():
-            # Display single main image
+        # Create card container
+        st.markdown('<div class="destination-card">', unsafe_allow_html=True)
+        
+        # 1. Display image with city overlay
+        city_name = destination.get('City', 'Unknown')
+        
+        # Create a container for the image with overlay
+        image_container = st.container()
+        with image_container:
             display_destination_image(
                 destination.get("Place_Name", ""), 
-                destination.get("Place_Id")
+                destination.get("Place_Id"),
+                city_name
             )
             
+            # City badge overlay (positioned over image)
             st.markdown(f"""
-            <div class="card-content">
-                <div class="city-badge">{destination.get('City', 'Unknown')}</div>
-                <h3 style="margin: 0.5rem 0; color: #2c3e50; font-size: 1.3rem;">{destination.get('Place_Name', 'Unknown')}</h3>
-                <p style="color: #7f8c8d; margin: 0.5rem 0; font-size: 0.9rem; line-height: 1.4;">
-                    {destination.get('Description', 'No description available')[:100]}...
-                </p>
-                <div style="margin: 1rem 0;">
-                    <span class="category-tag">{destination.get('Category', 'General')}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                    <div>
-                        <span class="rating-badge">⭐ {destination.get('Rating', 0)}</span>
-                        <span class="price-badge">{format_price(destination.get('Price', 0))}</span>
-                    </div>
-                </div>
+            <div style="position: relative; margin-top: -30px; z-index: 10;">
+                <div class="city-overlay">{city_name}</div>
             </div>
             """, unsafe_allow_html=True)
+        
+        # 2. Card content section
+        st.markdown(f"""
+        <div class="card-content" style="padding-top: 0.5rem;">
+            <h3 style="margin: 0.5rem 0; color: #2c3e50; font-size: 1.2rem; font-weight: bold;">
+                {destination.get('Place_Name', 'Unknown')}
+            </h3>
+            
+            <p class="description-text" style="color: #7f8c8d; margin: 0.8rem 0; font-size: 0.85rem; line-height: 1.4;">
+                {destination.get('Description', 'No description available')[:120]}{'...' if len(destination.get('Description', '')) > 120 else ''}
+            </p>
+            
+            <div style="margin: 0.8rem 0;">
+                <span class="category-tag">{destination.get('Category', 'General')}</span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #f0f0f0;">
+                <span class="rating-badge">⭐ {destination.get('Rating', 0)}</span>
+                <span class="price-badge">{format_price(destination.get('Price', 0))}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def get_user_location():
     """Get user location using JavaScript geolocation API"""
@@ -437,7 +501,7 @@ def homepage():
     """, unsafe_allow_html=True)
     
     # Location selection section
-    col1, col2, col3 = st.columns([1, 2, 1])
+    _, col2, _ = st.columns([1, 2, 1])
     with col2:
         st.markdown("### 📍 Pilih Wilayah Anda")
         
