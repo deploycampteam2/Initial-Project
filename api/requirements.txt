@@ -6,3 +6,4 @@ numpy==2.3.2
 python-multipart==0.0.19
 lightgbm==4.5.0
 scikit-learn==1.6.1
+streamlit-option-menu
