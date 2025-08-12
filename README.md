@@ -5,16 +5,18 @@
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-green?style=for-the-badge)
 
-**ExploreIndonesia** adalah platform rekomendasi wisata Indonesia berbasis AI yang membantu pengguna menemukan destinasi wisata terbaik berdasarkan lokasi, preferensi, dan rating. Platform ini menggunakan machine learning untuk memberikan rekomendasi yang personal dan akurat.
+**ExploreIndonesia** adalah platform rekomendasi wisata Indonesia berbasis AI yang membantu pengguna menemukan destinasi wisata terbaik berdasarkan lokasi, preferensi, dan rating. Platform ini menggunakan machine learning untuk memberikan rekomendasi yang personal dan akurat dengan data real dari 437+ destinasi wisata Indonesia.
 
 ## ✨ Fitur Utama
 
 ### 🏠 **Halaman Beranda**
-- **📍 GPS Detection** - Deteksi lokasi otomatis dengan fallback ke Jakarta
-- **🏙️ Dropdown Wilayah** - Pilih dari 12 kota besar Indonesia
-- **🎯 Rekomendasi Populer** - 5 destinasi terbaik dengan rating 4.0+
-- **📱 Responsive Design** - Optimal di semua perangkat
+- **📍 GPS Detection** - Deteksi lokasi otomatis dengan status real-time & fallback ke Jakarta
+- **🏙️ Dropdown Wilayah Real** - Pilih dari 5 kota dengan data aktual (Jakarta: 84, Yogyakarta: 126, Bandung: 124, dst)
+- **🎯 Rekomendasi Populer** - 5 destinasi terbaik dengan rating 4.0+ dari dataset real
+- **🖼️ Foto Asli** - Gambar destinasi hasil scraping dari folder `image/`
+- **📱 Responsive Design** - UI/UX modern dengan gradient dan animasi
 
 ### 🔍 **Halaman Pencarian**
 - **🎯 Advanced Filters** - Kota, kategori, rating, dan harga
@@ -41,18 +43,19 @@ ExploreIndonesia/
 │   ├── 📊 Data Processing     # Tourism data pipeline
 │   └── 🔌 API Endpoints       # RESTful services
 │
-├── 🖼️ Image Storage           # 167 destinations × 5 photos
+├── 🖼️ Image Storage           # 389MB+ foto real hasil scraping
 └── 🐳 Docker Services         # Container orchestration
 ```
 
 ## 📊 Dataset & Model
 
-### **Tourism Dataset**
-- **167 Destinasi** di 12 kota Indonesia
-- **5 Foto** per destinasi (835+ gambar)
-- **Rating & Review** dari wisatawan
-- **Kategori Wisata**: Budaya, Taman Hiburan, Cagar Alam, Bahari, dll
-- **Data Harga** dengan kategori: murah, menengah, mahal
+### **Tourism Dataset Real**
+- **437+ Destinasi** dari dataset `tourism_with_id.csv`
+- **5 Kota Utama**: Jakarta (84), Yogyakarta (126), Bandung (124), Surabaya (46), Semarang (57)
+- **Foto Real**: 389MB+ gambar hasil scraping per destinasi di folder `image/`
+- **Rating Aktual**: Data rating dari wisatawan asli
+- **Kategori Lengkap**: Budaya, Taman Hiburan, Cagar Alam, Bahari, Pusat Perbelanjaan, Tempat Ibadah
+- **Harga Terstruktur**: Kategori murah (≤25k), menengah (25k-100k), mahal (>100k)
 
 ### **ML Model**
 - **Algorithm**: Hybrid Recommendation System
@@ -141,22 +144,17 @@ GET /cities       # Available cities
 GET /categories   # Tourism categories
 ```
 
-## 🏙️ Supported Cities
+## 🏙️ Supported Cities (Real Data)
 
-| Kota | Region | Koordinat |
-|------|--------|-----------|
-| **Jakarta** | DKI Jakarta | -6.2088, 106.8456 |
-| **Yogyakarta** | DI Yogyakarta | -7.7956, 110.3695 |
-| **Bandung** | Jawa Barat | -6.9175, 107.6191 |
-| **Surabaya** | Jawa Timur | -7.2504, 112.7688 |
-| **Semarang** | Jawa Tengah | -6.9663, 110.4292 |
-| **Malang** | Jawa Timur | -7.9797, 112.6304 |
-| **Solo** | Jawa Tengah | -7.5755, 110.8243 |
-| **Medan** | Sumatera Utara | 3.5952, 98.6722 |
-| **Palembang** | Sumatera Selatan | -2.9761, 104.7754 |
-| **Makassar** | Sulawesi Selatan | -5.1477, 119.4327 |
-| **Denpasar** | Bali | -8.6705, 115.2126 |
-| **Balikpapan** | Kalimantan Timur | -1.2379, 116.8529 |
+| Kota | Destinasi | Region | Koordinat | Status |
+|------|-----------|--------|-----------|---------|
+| **Jakarta** | 84 destinasi | DKI Jakarta | -6.175, 106.827 | ✅ Active |
+| **Yogyakarta** | 126 destinasi | DI Yogyakarta | -7.801, 110.368 | ✅ Active |
+| **Bandung** | 124 destinasi | Jawa Barat | -6.760, 107.610 | ✅ Active |
+| **Surabaya** | 46 destinasi | Jawa Timur | -7.309, 112.822 | ✅ Active |
+| **Semarang** | 57 destinasi | Jawa Tengah | -7.210, 110.342 | ✅ Active |
+
+*Data destinasi berdasarkan analisis real dari `tourism_with_id.csv`*
 
 ## 🛠️ Tech Stack
 
@@ -264,16 +262,20 @@ services:
 
 ## 📈 Performance & Monitoring
 
-### **Application Metrics**
-- **Response Time**: < 200ms untuk API calls
-- **Dataset Size**: 167 destinasi × 5 foto = 835+ images
-- **Model Size**: ~50MB compressed
+### **Application Metrics (Real Data)**
+- **Response Time**: < 200ms untuk API calls dengan fallback system
+- **Dataset Size**: 437+ destinasi real dari CSV analysis
+- **Image Storage**: 389MB+ foto asli hasil scraping
+- **Model Size**: ~50MB compressed dengan artifacts
 - **Container Memory**: ~512MB per service
+- **GPS Detection**: Real-time dengan fallback Jakarta
 
-### **Health Checks**
-- API Health: `GET /` returns service status
-- Model Status: `/stats` endpoint untuk ML model info
-- Docker health checks configured untuk semua services
+### **Health Checks & Status**
+- ✅ **API Health**: `GET /` returns service status & ML model status
+- ✅ **Model Fallback**: Dummy data system ketika ML model tidak tersedia  
+- ✅ **Real Data**: Integration dengan `tourism_with_id.csv`
+- ✅ **Docker Health**: Health checks configured untuk semua services
+- ✅ **Image Loading**: Automatic fallback untuk missing images
 
 ## 🤝 Contributing
 
@@ -296,13 +298,32 @@ services:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🚀 Latest Updates & Improvements
+
+### **✅ Production-Ready Features (Latest Release)**
+- **🎯 Real GPS Detection**: Implementasi GPS dengan status real-time dan fallback system
+- **📊 Data Integration**: Menggunakan dataset real `tourism_with_id.csv` dengan 437+ destinasi
+- **🏙️ City Dropdown**: Data aktual per kota - Jakarta (84), Yogyakarta (126), Bandung (124), dll
+- **🖼️ Image System**: Integrasi foto asli hasil scraping dari folder `image/` (389MB+)
+- **🎨 UI/UX Modern**: Design production-ready dengan gradient, animasi, dan responsive layout
+- **⚡ Fallback System**: Robust error handling dengan dummy data ketika ML model tidak tersedia
+- **🐳 Docker Ready**: Full containerization dengan health checks dan monitoring
+
+### **🔧 Technical Improvements**
+- **Python 3.12**: Upgrade dari 3.10 untuk compatibility dengan dependencies terbaru
+- **Real Data Analysis**: Analisis langsung dari CSV untuk statistik akurat
+- **GPS Geolocation**: JavaScript-based detection dengan UI indicators
+- **Image Handling**: Automatic path detection dan fallback system
+- **API Robustness**: Complete error handling dan response validation
+
 ## 🙏 Acknowledgments
 
-- **Indonesian Tourism Data** - Sourced from various public APIs
-- **Streamlit Community** - For amazing web framework
-- **FastAPI Team** - For high-performance API framework
-- **scikit-learn** - For machine learning capabilities
-- **Indonesian Tourism Board** - For destination information
+- **Indonesian Tourism Data** - Real dataset dari berbagai sumber terpercaya
+- **Streamlit Community** - Framework web yang powerful untuk Python
+- **FastAPI Team** - High-performance API framework dengan async support
+- **scikit-learn** - Machine learning capabilities untuk recommendation engine
+- **Docker Community** - Containerization technology untuk deployment
+- **Indonesian Tourism Board** - Data dan informasi destinasi Indonesia
 
 ## 📞 Contact & Support
 
