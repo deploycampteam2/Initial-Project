@@ -65,7 +65,7 @@ def load_ml_model():
     global model_artifacts, loaded
     
     try:
-        model_path = os.path.join(os.path.dirname(__file__), "..", "model", "recommendation_artifacts_optimal.pkl")
+        model_path = os.path.join(os.path.dirname(__file__), "model", "recommendation_artifacts_optimal.pkl")
         
         if not os.path.exists(model_path):
             print(f"Model file not found at: {model_path}")
