@@ -27,7 +27,9 @@
       "Bash(pip3 install:*)",
       "Bash(ls:*)",
       "Bash(python:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(docker exec:*)"
     ],
     "deny": []
   }

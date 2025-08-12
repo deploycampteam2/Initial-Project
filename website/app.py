@@ -7,8 +7,14 @@ from PIL import Image
 import random
 from typing import List, Dict, Optional
 from streamlit_option_menu import option_menu
-from streamlit_carousel import carousel
 import math
+
+# Try to import streamlit-carousel, fallback to native implementation
+try:
+    from streamlit_carousel import carousel
+    CAROUSEL_AVAILABLE = True
+except ImportError:
+    CAROUSEL_AVAILABLE = False
 
 # Page config
 st.set_page_config(
@@ -224,44 +230,91 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         return []
 
 def display_image_carousel(images, destination_id):
-    """Display image carousel for destination using streamlit-carousel"""
+    """Display image carousel for destination with fallback to native implementation"""
     if not images:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
     
-    # Filter existing images and prepare for carousel
-    carousel_items = []
+    # Filter existing images
+    valid_images = []
     for img_path in images:
         if os.path.exists(img_path):
-            try:
-                # Convert to base64 for carousel
-                with open(img_path, "rb") as img_file:
-                    import base64
-                    img_base64 = base64.b64encode(img_file.read()).decode()
-                    carousel_items.append({
-                        "title": f"Gambar {len(carousel_items) + 1}",
-                        "text": "",
-                        "img": f"data:image/jpeg;base64,{img_base64}"
-                    })
-            except Exception as e:
-                continue
+            valid_images.append(img_path)
     
-    if not carousel_items:
+    if not valid_images:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
     
     # If only one image, display it directly
-    if len(carousel_items) == 1:
-        st.image(carousel_items[0]["img"], use_container_width=True)
+    if len(valid_images) == 1:
+        try:
+            image = Image.open(valid_images[0])
+            st.image(image, use_container_width=True)
+        except:
+            st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
     
-    # Use streamlit-carousel
-    carousel(
-        items=carousel_items,
-        width=1.0,
-        height=250,
-        key=f"carousel_{destination_id}_{random.randint(1000, 9999)}"
-    )
+    # Use streamlit-carousel if available, otherwise fallback to native
+    if CAROUSEL_AVAILABLE:
+        try:
+            # Prepare for streamlit-carousel
+            carousel_items = []
+            for img_path in valid_images:
+                try:
+                    # Convert to base64 for carousel
+                    with open(img_path, "rb") as img_file:
+                        import base64
+                        img_base64 = base64.b64encode(img_file.read()).decode()
+                        carousel_items.append({
+                            "title": f"Gambar {len(carousel_items) + 1}",
+                            "text": "",
+                            "img": f"data:image/jpeg;base64,{img_base64}"
+                        })
+                except Exception as e:
+                    continue
+            
+            if carousel_items:
+                carousel(
+                    items=carousel_items,
+                    width=1.0,
+                    height=250,
+                    key=f"carousel_{destination_id}_{random.randint(1000, 9999)}"
+                )
+                return
+        except Exception as e:
+            # Fallback to native if carousel fails
+            pass
+    
+    # Native Streamlit implementation (fallback)
+    carousel_key = f"carousel_{destination_id}"
+    if carousel_key not in st.session_state:
+        st.session_state[carousel_key] = 0
+    
+    # Create container for image and navigation
+    current_idx = st.session_state[carousel_key]
+    
+    # Display current image
+    try:
+        image = Image.open(valid_images[current_idx])
+        st.image(image, use_container_width=True)
+    except:
+        st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
+    
+    # Navigation and counter
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("⬅️", key=f"prev_{destination_id}", help="Gambar sebelumnya"):
+            st.session_state[carousel_key] = (current_idx - 1) % len(valid_images)
+            st.rerun()
+    
+    with col2:
+        st.markdown(f"<div style='text-align: center; padding: 0.5rem; font-size: 0.9rem; color: #666;'>{current_idx + 1} / {len(valid_images)}</div>", unsafe_allow_html=True)
+    
+    with col3:
+        if st.button("➡️", key=f"next_{destination_id}", help="Gambar selanjutnya"):
+            st.session_state[carousel_key] = (current_idx + 1) % len(valid_images)
+            st.rerun()
 
 def display_destination_card(destination, col):
     """Display a destination card with image carousel"""
