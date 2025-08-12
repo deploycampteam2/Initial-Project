@@ -7,6 +7,7 @@ from PIL import Image
 import random
 from typing import List, Dict, Optional
 from streamlit_option_menu import option_menu
+from streamlit_image_carousel import image_carousel
 import math
 
 # Page config
@@ -152,90 +153,6 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    
-    .image-carousel {
-        position: relative;
-        width: 100%;
-        height: 250px;
-        overflow: hidden;
-        border-radius: 15px 15px 0 0;
-    }
-    
-    .carousel-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-    }
-    
-    .carousel-image {
-        width: 100%;
-        height: 250px;
-        object-fit: cover;
-        display: none;
-    }
-    
-    .carousel-image.active {
-        display: block;
-    }
-    
-    .carousel-nav {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0,0,0,0.5);
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        cursor: pointer;
-        font-size: 18px;
-        border-radius: 50%;
-        transition: all 0.3s ease;
-    }
-    
-    .carousel-nav:hover {
-        background: rgba(0,0,0,0.8);
-    }
-    
-    .carousel-prev {
-        left: 10px;
-    }
-    
-    .carousel-next {
-        right: 10px;
-    }
-    
-    .carousel-dots {
-        position: absolute;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 8px;
-    }
-    
-    .carousel-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.5);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .carousel-dot.active {
-        background: white;
-    }
-    
-    .image-counter {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0,0,0,0.7);
-        color: white;
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-size: 0.8rem;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -307,71 +224,37 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         return []
 
 def display_image_carousel(images, destination_id):
-    """Display image carousel for destination"""
+    """Display image carousel for destination using streamlit-image-carousel"""
     if not images:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
     
-    # Create unique ID for this carousel
-    carousel_id = f"carousel_{destination_id}_{random.randint(1000, 9999)}"
-    
-    # HTML for image carousel
-    carousel_html = f"""
-    <div class="image-carousel" id="{carousel_id}">
-        <div class="carousel-container">
-    """
-    
-    # Add images
-    for i, img_path in enumerate(images):
+    # Convert file paths to data URLs for carousel
+    carousel_images = []
+    for img_path in images:
         if os.path.exists(img_path):
-            # Convert to base64 for embedding
             try:
+                # Convert to base64 data URL
                 with open(img_path, "rb") as img_file:
                     import base64
                     img_base64 = base64.b64encode(img_file.read()).decode()
-                active_class = "active" if i == 0 else ""
-                carousel_html += f"""
-                <img src="data:image/jpeg;base64,{img_base64}" 
-                     class="carousel-image {active_class}" 
-                     alt="Destination Image {i+1}">
-                """
-            except:
+                    data_url = f"data:image/jpeg;base64,{img_base64}"
+                    carousel_images.append(data_url)
+            except Exception as e:
                 continue
     
-    # Add counter
-    carousel_html += f"""
-            <div class="image-counter">
-                <span id="{carousel_id}_counter">1</span> / {len(images)}
-            </div>
-        </div>
-    </div>
-    
-    <script>
-    (function() {{
-        let currentSlide_{carousel_id.replace('-', '_')} = 0;
-        const images_{carousel_id.replace('-', '_')} = document.querySelectorAll('#{carousel_id} .carousel-image');
-        const counter_{carousel_id.replace('-', '_')} = document.querySelector('#{carousel_id}_counter');
-        const totalImages_{carousel_id.replace('-', '_')} = images_{carousel_id.replace('-', '_')}.length;
-        
-        function showSlide_{carousel_id.replace('-', '_')}(index) {{
-            images_{carousel_id.replace('-', '_')}.forEach((img, i) => {{
-                img.classList.toggle('active', i === index);
-            }});
-            if (counter_{carousel_id.replace('-', '_')}) {{
-                counter_{carousel_id.replace('-', '_')}.textContent = index + 1;
-            }}
-        }}
-        
-        // Auto-advance slides every 3 seconds
-        setInterval(() => {{
-            currentSlide_{carousel_id.replace('-', '_')} = (currentSlide_{carousel_id.replace('-', '_')} + 1) % totalImages_{carousel_id.replace('-', '_')};
-            showSlide_{carousel_id.replace('-', '_')}(currentSlide_{carousel_id.replace('-', '_')});
-        }}, 3000);
-    }})();
-    </script>
-    """
-    
-    st.markdown(carousel_html, unsafe_allow_html=True)
+    if carousel_images:
+        # Use streamlit-image-carousel
+        image_carousel(
+            images=carousel_images,
+            width=1.0,
+            wrap=True,
+            autoplay=True,
+            interval=3000,
+            key=f"carousel_{destination_id}_{random.randint(1000, 9999)}"
+        )
+    else:
+        st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
 
 def display_destination_card(destination, col):
     """Display a destination card with image carousel"""
@@ -505,23 +388,42 @@ def homepage():
     st.markdown("### ✨ Rekomendasi Wisata di Sekitar Anda")
     
     with st.spinner("🔄 Mencari tempat wisata terbaik..."):
+        # Get top 5 highest rated destinations from selected city
         recommendations = get_recommendations_from_api(
             location=selected_city,
-            min_rating=4.0,
-            top_n=6
+            min_rating=3.0,  # Lower threshold to get more results
+            top_n=50  # Get more results to sort by rating
         )
+        
+        # Sort by rating and take top 5
+        if recommendations:
+            recommendations.sort(key=lambda x: x.get('Rating', 0), reverse=True)
+            recommendations = recommendations[:5]
     
     if recommendations:
-        # Display 6 recommendations in 3x2 grid layout
-        st.markdown(f"<h4 style='text-align: center; color: #2c3e50; margin: 1rem 0;'>🏆 {len(recommendations)} Destinasi Terpilih</h4>", unsafe_allow_html=True)
+        # Display 5 top-rated destinations
+        st.markdown(f"<h4 style='text-align: center; color: #2c3e50; margin: 1rem 0;'>🏆 Top {len(recommendations)} Rating Tertinggi di {selected_city}</h4>", unsafe_allow_html=True)
         
-        # Display in rows of 3
-        cols_per_row = 3
-        for i in range(0, len(recommendations), cols_per_row):
-            cols = st.columns(cols_per_row)
-            for j, rec in enumerate(recommendations[i:i+cols_per_row]):
-                if j < len(cols):
-                    display_destination_card(rec, cols[j])
+        # Special layout for 5 items: 2 on top, 3 on bottom
+        if len(recommendations) >= 3:
+            # First row - 2 cards
+            cols = st.columns(2)
+            for i in range(min(2, len(recommendations))):
+                display_destination_card(recommendations[i], cols[i])
+            
+            # Second row - 3 cards (if we have more than 2)
+            if len(recommendations) > 2:
+                cols = st.columns(3)
+                for i in range(2, min(5, len(recommendations))):
+                    display_destination_card(recommendations[i], cols[i-2])
+        else:
+            # Fallback for less than 3 recommendations
+            cols_per_row = 2
+            for i in range(0, len(recommendations), cols_per_row):
+                cols = st.columns(cols_per_row)
+                for j, rec in enumerate(recommendations[i:i+cols_per_row]):
+                    if j < len(cols):
+                        display_destination_card(rec, cols[j])
         
         # Show more button
         st.markdown("---")
@@ -699,14 +601,14 @@ def gallery_page():
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Get all destinations
+    # Get all destinations (API has max limit of 50)
     with st.spinner("🔄 Memuat galeri destinasi..."):
-        # Get a large number of destinations
+        # Get maximum available destinations from API
         all_destinations = get_recommendations_from_api(
             location=city_filter if city_filter else None,
             min_rating=min_rating,
             category=category_filter if category_filter else None,
-            top_n=1000  # Get maximum available
+            top_n=50  # API maximum limit
         )
     
     if all_destinations:

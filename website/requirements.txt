@@ -8,3 +8,4 @@ streamlit-option-menu==0.4.0
 extra-streamlit-components==0.1.71
 streamlit-lottie==0.0.5
 streamlit-authenticator==0.3.3
+streamlit-image-carousel==1.0.1
