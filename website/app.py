@@ -187,8 +187,8 @@ st.markdown("""
     }
     
     /* Ensure card content has proper spacing */
-    .destination-card .card-content {
-        padding: 1rem;
+    .destination-card {
+        padding: 0 1rem 1rem 1rem;
     }
     
     /* Description height consistency */
@@ -358,7 +358,7 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         st.error(f"❌ Tidak dapat terhubung ke API: {str(e)}")
         return []
 
-def display_destination_image(destination_name, destination_id, city_name=""):
+def display_destination_image(destination_name, destination_id):
     """Display single main image for destination with consistent sizing"""
     # Get first image for the destination
     image_path = get_image_path(destination_name, destination_id)
@@ -392,53 +392,64 @@ def display_destination_image(destination_name, destination_id, city_name=""):
         )
 
 def display_destination_card(destination, col):
-    """Display a destination card with reorganized layout"""
+    """Display a destination card with proper Streamlit components"""
     with col:
-        # Create card container
-        st.markdown('<div class="destination-card">', unsafe_allow_html=True)
-        
-        # 1. Display image with city overlay
-        city_name = destination.get('City', 'Unknown')
-        
-        # Create a container for the image with overlay
-        image_container = st.container()
-        with image_container:
+        # Create card container with border and styling
+        with st.container():
+            st.markdown('<div class="destination-card">', unsafe_allow_html=True)
+            
+            # 1. Display image
             display_destination_image(
                 destination.get("Place_Name", ""), 
-                destination.get("Place_Id"),
-                city_name
+                destination.get("Place_Id")
             )
             
-            # City badge overlay (positioned over image)
+            # 2. City badge overlay
+            city_name = destination.get('City', 'Unknown')
             st.markdown(f"""
-            <div style="position: relative; margin-top: -30px; z-index: 10;">
+            <div style="position: relative; margin-top: -30px; z-index: 10; margin-bottom: 10px;">
                 <div class="city-overlay">{city_name}</div>
             </div>
             """, unsafe_allow_html=True)
-        
-        # 2. Card content section
-        st.markdown(f"""
-        <div class="card-content" style="padding-top: 0.5rem;">
-            <h3 style="margin: 0.5rem 0; color: #2c3e50; font-size: 1.2rem; font-weight: bold;">
-                {destination.get('Place_Name', 'Unknown')}
-            </h3>
             
-            <p class="description-text" style="color: #7f8c8d; margin: 0.8rem 0; font-size: 0.85rem; line-height: 1.4;">
-                {destination.get('Description', 'No description available')[:120]}{'...' if len(destination.get('Description', '')) > 120 else ''}
-            </p>
+            # 3. Card content using Streamlit components
+            with st.container():
+                # Title
+                st.markdown(f"""
+                <h3 style="margin: 0.5rem 0; color: #2c3e50; font-size: 1.2rem; font-weight: bold;">
+                    {destination.get('Place_Name', 'Unknown')}
+                </h3>
+                """, unsafe_allow_html=True)
+                
+                # Description
+                description = destination.get('Description', 'No description available')
+                truncated_desc = description[:120] + '...' if len(description) > 120 else description
+                
+                st.markdown(f"""
+                <p class="description-text" style="color: #7f8c8d; margin: 0.8rem 0; font-size: 0.85rem; line-height: 1.4;">
+                    {truncated_desc}
+                </p>
+                """, unsafe_allow_html=True)
+                
+                # Category tag
+                st.markdown(f"""
+                <div style="margin: 0.8rem 0;">
+                    <span class="category-tag">{destination.get('Category', 'General')}</span>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Rating and Price row
+                rating = destination.get('Rating', 0)
+                price = format_price(destination.get('Price', 0))
+                
+                st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #f0f0f0;">
+                    <span class="rating-badge">⭐ {rating}</span>
+                    <span class="price-badge">{price}</span>
+                </div>
+                """, unsafe_allow_html=True)
             
-            <div style="margin: 0.8rem 0;">
-                <span class="category-tag">{destination.get('Category', 'General')}</span>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #f0f0f0;">
-                <span class="rating-badge">⭐ {destination.get('Rating', 0)}</span>
-                <span class="price-badge">{format_price(destination.get('Price', 0))}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 def get_user_location():
     """Get user location using JavaScript geolocation API"""
