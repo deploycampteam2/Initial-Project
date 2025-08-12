@@ -40,3 +40,9 @@ tzdata==2025.2
 urllib3==2.5.0
 uvicorn==0.34.0
 watchdog==6.0.0
+lightgbm==4.5.0
+scikit-learn==1.6.1
+streamlit-option-menu==0.4.0
+extra-streamlit-components==0.1.71
+streamlit-lottie==0.0.5
+streamlit-authenticator==0.3.4
