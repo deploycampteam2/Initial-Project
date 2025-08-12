@@ -177,6 +177,93 @@ st.markdown("""
     div[data-testid="stImage"] {
         height: 250px !important;
     }
+    
+    /* Hide carousel text overlay */
+    .stCarousel .carousel-item h3,
+    .stCarousel .carousel-item p,
+    .stCarousel .carousel-caption {
+        display: none !important;
+    }
+    
+    /* Streamlit carousel specific fixes */
+    .carousel-caption {
+        display: none !important;
+    }
+    
+    .carousel-title {
+        display: none !important;
+    }
+    
+    .carousel-text {
+        display: none !important;
+    }
+    
+    /* Enhanced carousel text overlay hiding */
+    [data-testid="stCarousel"] .carousel-item .carousel-caption,
+    [data-testid="stCarousel"] .carousel-item h1,
+    [data-testid="stCarousel"] .carousel-item h2, 
+    [data-testid="stCarousel"] .carousel-item h3,
+    [data-testid="stCarousel"] .carousel-item h4,
+    [data-testid="stCarousel"] .carousel-item h5,
+    [data-testid="stCarousel"] .carousel-item h6,
+    [data-testid="stCarousel"] .carousel-item p,
+    [data-testid="stCarousel"] .carousel-item span.text,
+    [data-testid="stCarousel"] .carousel-item div.text {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+    
+    /* Fix carousel navigation buttons positioning */
+    [data-testid="stCarousel"] .carousel-control-prev,
+    [data-testid="stCarousel"] .carousel-control-next {
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 40px !important;
+        height: 40px !important;
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        border-radius: 50% !important;
+        z-index: 10 !important;
+    }
+    
+    [data-testid="stCarousel"] .carousel-control-prev {
+        left: 10px !important;
+    }
+    
+    [data-testid="stCarousel"] .carousel-control-next {
+        right: 10px !important;
+    }
+    
+    /* Style carousel navigation icons */
+    [data-testid="stCarousel"] .carousel-control-prev-icon,
+    [data-testid="stCarousel"] .carousel-control-next-icon {
+        width: 20px !important;
+        height: 20px !important;
+    }
+    
+    /* Remove any text overlay elements in streamlit-carousel */
+    .stCarousel .carousel-item > * > *:not(img) {
+        display: none !important;
+    }
+    
+    /* Navigation button styling for native carousel */
+    .carousel-nav-container {
+        margin: 0.5rem 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 1rem !important;
+    }
+    
+    .carousel-nav-container .stButton {
+        margin: 0 !important;
+    }
+    
+    .carousel-nav-container .stButton button {
+        padding: 0.5rem 1rem !important;
+        min-height: 2.5rem !important;
+        border-radius: 20px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -334,8 +421,8 @@ def display_image_carousel(images, destination_id):
             carousel_items = []
             for i, resized_img in enumerate(resized_images):
                 carousel_items.append({
-                    "title": f"Gambar {i + 1}",
-                    "text": "",
+                    "title": "",  # Empty title to avoid text overlay
+                    "text": "",   # Empty text to avoid text overlay
                     "img": resized_img
                 })
             
@@ -344,7 +431,9 @@ def display_image_carousel(images, destination_id):
                     items=carousel_items,
                     width=1.0,
                     height=250,
-                    key=f"carousel_{destination_id}_{random.randint(1000, 9999)}"
+                    key=f"carousel_{destination_id}_{random.randint(1000, 9999)}",
+                    container_height=250,
+                    interval=4000,  # 4 second auto-advance
                 )
                 return
         except Exception as e:
@@ -376,21 +465,25 @@ def display_image_carousel(images, destination_id):
     except:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
     
-    # Navigation and counter
+    # Navigation and counter with better styling
+    st.markdown('<div class="carousel-nav-container">', unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col1:
-        if st.button("⬅️", key=f"prev_{destination_id}", help="Gambar sebelumnya"):
+        if st.button("⬅️ Prev", key=f"prev_{destination_id}", help="Gambar sebelumnya"):
             st.session_state[carousel_key] = (current_idx - 1) % len(valid_images)
             st.rerun()
     
     with col2:
-        st.markdown(f"<div style='text-align: center; padding: 0.5rem; font-size: 0.9rem; color: #666;'>{current_idx + 1} / {len(valid_images)}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: center; padding: 0.5rem; font-size: 0.9rem; color: #667eea; font-weight: bold;'>{current_idx + 1} / {len(valid_images)}</div>", unsafe_allow_html=True)
     
     with col3:
-        if st.button("➡️", key=f"next_{destination_id}", help="Gambar selanjutnya"):
+        if st.button("Next ➡️", key=f"next_{destination_id}", help="Gambar selanjutnya"):
             st.session_state[carousel_key] = (current_idx + 1) % len(valid_images)
             st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def display_destination_card(destination, col):
     """Display a destination card with image carousel"""

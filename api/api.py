@@ -378,7 +378,7 @@ async def root():
 def load_csv_data():
     """Load tourism data directly from CSV"""
     try:
-        csv_path = "/app/data/tourism_with_id.csv"
+        csv_path = "data/tourism_with_id.csv"
         if os.path.exists(csv_path):
             df = pd.read_csv(csv_path)
             return df
