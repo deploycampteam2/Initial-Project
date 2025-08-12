@@ -130,16 +130,6 @@ st.markdown("""
         font-weight: bold;
     }
     
-    .gps-status {
-        background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
-        color: white;
-        padding: 0.8rem 1.5rem;
-        border-radius: 20px;
-        display: inline-block;
-        margin: 0.5rem 0;
-        font-size: 0.9rem;
-    }
-    
     .city-stats {
         background: rgba(255, 255, 255, 0.1);
         padding: 0.5rem 1rem;
@@ -162,41 +152,9 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    
-    .gps-button {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
-    }
-    
-    .gps-button:hover {
-        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%) !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-def calculate_distance(lat1, lon1, lat2, lon2):
-    """Calculate distance between two points using Haversine formula"""
-    R = 6371  # Earth's radius in kilometers
-    
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    distance = R * c
-    
-    return distance
-
-def find_nearest_city(user_lat, user_lon):
-    """Find the nearest Indonesian city to user's location"""
-    nearest_city = "Jakarta"  # default
-    min_distance = float('inf')
-    
-    for city, coords in INDONESIAN_CITIES.items():
-        distance = calculate_distance(user_lat, user_lon, coords["lat"], coords["lon"])
-        if distance < min_distance:
-            min_distance = distance
-            nearest_city = city
-    
-    return nearest_city, min_distance
 
 def format_price(price):
     """Format price to Indonesian Rupiah"""
@@ -331,14 +289,8 @@ def get_user_location():
 def homepage():
     """Homepage with location-based recommendations"""
     # Initialize location in session state
-    if 'user_lat' not in st.session_state:
-        st.session_state.user_lat = None
-    if 'user_lon' not in st.session_state:
-        st.session_state.user_lon = None
     if 'selected_city' not in st.session_state:
         st.session_state.selected_city = "Jakarta"
-    if 'gps_detected' not in st.session_state:
-        st.session_state.gps_detected = False
     
     # Hero section
     st.markdown("""
@@ -355,31 +307,7 @@ def homepage():
     with col2:
         st.markdown("### 📍 Pilih Wilayah Anda")
         
-        # GPS Detection Button
-        if st.button("🌍 Deteksi Lokasi Saya", key="gps_btn", use_container_width=True):
-            with st.spinner("🔍 Mendeteksi lokasi Anda..."):
-                # Note: Real GPS detection would require JavaScript component
-                # For now, we simulate detection with default location
-                st.info("📱 Untuk akses GPS, izinkan browser menggunakan lokasi Anda")
-                st.session_state.gps_detected = True
-                
-                # Simulate detection result (in real app, this would come from JavaScript)
-                # Default to Jakarta for demo
-                detected_city = "Jakarta"
-                st.session_state.selected_city = detected_city
-                st.success(f"✅ Lokasi terdeteksi: {detected_city}")
-        
-        # Show GPS status
-        if st.session_state.gps_detected:
-            st.markdown(f"""
-            <div class="gps-status">
-                🌍 GPS: Aktif | 📍 Terdeteksi: {st.session_state.selected_city}
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # Manual city selection with real data
+        # City selection with real data
         city_options = []
         for city, info in INDONESIAN_CITIES.items():
             city_options.append(f"{city} ({info['destinations']} destinasi)")
@@ -444,7 +372,8 @@ def homepage():
         col_center = st.columns([2, 1, 2])[1]
         with col_center:
             if st.button("🔍 Lihat Lebih Banyak", use_container_width=True):
-                st.switch_page("🔍 Cari Rekomendasi")
+                st.session_state.current_page = "🔍 Cari Rekomendasi"
+                st.rerun()
     else:
         st.warning(f"Tidak ada rekomendasi ditemukan untuk wilayah {selected_city}.")
         
@@ -559,14 +488,21 @@ def recommendations_page():
 def main():
     """Main application with navigation"""
     
+    # Initialize current page in session state
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "🏠 Beranda"
+    
     # Navigation
     with st.container():
+        # Get the current page index for option_menu
+        current_index = 0 if st.session_state.current_page == "🏠 Beranda" else 1
+        
         selected = option_menu(
             menu_title=None,
             options=["🏠 Beranda", "🔍 Cari Rekomendasi"],
             icons=["house", "search"],
             menu_icon="cast",
-            default_index=0,
+            default_index=current_index,
             orientation="horizontal",
             styles={
                 "container": {"padding": "0!important", "background-color": "#fafafa"},
@@ -575,11 +511,16 @@ def main():
                 "nav-link-selected": {"background-color": "#667eea", "color": "white"},
             }
         )
+        
+        # Update session state when menu is clicked
+        if selected != st.session_state.current_page:
+            st.session_state.current_page = selected
+            st.rerun()
     
-    # Page routing
-    if selected == "🏠 Beranda":
+    # Page routing based on session state
+    if st.session_state.current_page == "🏠 Beranda":
         homepage()
-    elif selected == "🔍 Cari Rekomendasi":
+    elif st.session_state.current_page == "🔍 Cari Rekomendasi":
         recommendations_page()
     
     # Footer with real data stats
