@@ -25,7 +25,9 @@
       "mcp__ide__executeCode",
       "Bash(python3:*)",
       "Bash(pip3 install:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }
