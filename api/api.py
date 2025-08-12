@@ -284,10 +284,87 @@ def load_tourism_data():
     
     return pd.DataFrame(data)
 
+def get_fallback_recommendations(location=None, min_rating=None, price_category=None, category=None, top_n=10):
+    """Fallback recommendations using dummy data when ML model is not available"""
+    dummy_places = [
+        {
+            "Place_Id": 1,
+            "Place_Name": "Monas (Monumen Nasional)",
+            "Description": "Monas adalah monumen bersejarah setinggi 132 meter yang menjadi simbol Jakarta dan Indonesia.",
+            "Category": "Budaya",
+            "City": "Jakarta", 
+            "Price": 15000,
+            "Rating": 4.2,
+            "price_category": "murah"
+        },
+        {
+            "Place_Id": 2,
+            "Place_Name": "Candi Borobudur",
+            "Description": "Candi Buddha terbesar di dunia yang merupakan warisan budaya UNESCO.",
+            "Category": "Budaya",
+            "City": "Yogyakarta",
+            "Price": 50000,
+            "Rating": 4.8,
+            "price_category": "menengah"
+        },
+        {
+            "Place_Id": 3,
+            "Place_Name": "Pantai Kuta",
+            "Description": "Pantai yang terkenal dengan ombaknya yang bagus untuk surfing dan sunset yang indah.",
+            "Category": "Bahari",
+            "City": "Bandung",
+            "Price": 0,
+            "Rating": 4.5,
+            "price_category": "murah"
+        },
+        {
+            "Place_Id": 4,
+            "Place_Name": "Taman Mini Indonesia Indah",
+            "Description": "Taman budaya yang menampilkan keragaman budaya Indonesia dalam satu lokasi.",
+            "Category": "Taman Hiburan",
+            "City": "Jakarta",
+            "Price": 25000,
+            "Rating": 4.1,
+            "price_category": "murah"
+        },
+        {
+            "Place_Id": 5,
+            "Place_Name": "Malioboro Street",
+            "Description": "Jalan legendaris di Yogyakarta dengan berbagai toko, kuliner, dan budaya lokal.",
+            "Category": "Pusat Perbelanjaan",
+            "City": "Yogyakarta",
+            "Price": 0,
+            "Rating": 4.4,
+            "price_category": "murah"
+        }
+    ]
+    
+    # Apply filters
+    filtered_places = dummy_places.copy()
+    
+    if location:
+        filtered_places = [p for p in filtered_places if p["City"] == location]
+    if min_rating is not None:
+        filtered_places = [p for p in filtered_places if p["Rating"] >= min_rating]
+    if price_category:
+        filtered_places = [p for p in filtered_places if p["price_category"] == price_category]
+    if category:
+        filtered_places = [p for p in filtered_places if p["Category"] == category]
+    
+    # Add score and limit results
+    for place in filtered_places:
+        place["score"] = place["Rating"]
+    
+    return filtered_places[:top_n]
+
 @app.on_event("startup")
 async def startup_event():
     """Load ML model on startup"""
-    load_ml_model()
+    try:
+        load_ml_model()
+    except Exception as e:
+        print(f"Failed to load ML model: {e}")
+        print("Running in fallback mode with dummy data")
 
 @app.get("/")
 async def root():
@@ -311,7 +388,9 @@ async def get_recommendations(
     Endpoint untuk mendapatkan rekomendasi wisata general (tanpa user_id)
     """
     if not loaded:
-        raise HTTPException(status_code=503, detail="Data belum dimuat")
+        # Fallback to dummy data
+        print("Model not loaded, using fallback data")
+        return get_fallback_recommendations(location, min_rating, price_category, category, top_n)
     
     try:
         # Parse interests from string to list
@@ -357,7 +436,9 @@ async def post_recommendations(request: RecommendationRequest):
     Endpoint POST untuk mendapatkan rekomendasi wisata general
     """
     if not loaded:
-        raise HTTPException(status_code=503, detail="Data belum dimuat")
+        # Fallback to dummy data
+        print("Model not loaded, using fallback data")
+        return get_fallback_recommendations(request.location, request.min_rating, request.price_category, request.category, request.top_n)
     
     try:
         recommendations = recommend_places_general(
