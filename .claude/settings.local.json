@@ -19,7 +19,8 @@
       "Bash(docker run:*)",
       "Bash(docker stop:*)",
       "Bash(docker rm:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
