@@ -375,6 +375,67 @@ async def root():
         "ml_model_loaded": loaded
     }
 
+def load_csv_data():
+    """Load tourism data directly from CSV"""
+    try:
+        csv_path = "/app/data/tourism_with_id.csv"
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return df
+        else:
+            print(f"CSV file not found at: {csv_path}")
+            return None
+    except Exception as e:
+        print(f"Error loading CSV data: {e}")
+        return None
+
+def get_csv_recommendations(location=None, min_rating=None, price_category=None, category=None, top_n=10):
+    """Get recommendations directly from CSV data"""
+    df = load_csv_data()
+    if df is None:
+        return get_fallback_recommendations(location, min_rating, price_category, category, top_n)
+    
+    # Filter data
+    filtered_df = df.copy()
+    
+    if location:
+        filtered_df = filtered_df[filtered_df['City'].str.contains(location, case=False, na=False)]
+    
+    if min_rating:
+        filtered_df = filtered_df[filtered_df['Rating'] >= min_rating]
+    
+    if category:
+        filtered_df = filtered_df[filtered_df['Category'].str.contains(category, case=False, na=False)]
+    
+    # Add price category logic
+    if price_category:
+        if price_category.lower() == "murah":
+            filtered_df = filtered_df[filtered_df['Price'] <= 50000]
+        elif price_category.lower() == "menengah":
+            filtered_df = filtered_df[(filtered_df['Price'] > 50000) & (filtered_df['Price'] <= 200000)]
+        elif price_category.lower() == "mahal":
+            filtered_df = filtered_df[filtered_df['Price'] > 200000]
+    
+    # Sort by rating and get top N
+    filtered_df = filtered_df.sort_values('Rating', ascending=False).head(top_n)
+    
+    # Convert to response format
+    recommendations = []
+    for _, row in filtered_df.iterrows():
+        recommendations.append({
+            "Place_Id": int(row['Place_Id']),
+            "Place_Name": str(row['Place_Name']),
+            "Description": str(row['Description'])[:200] + "..." if len(str(row['Description'])) > 200 else str(row['Description']),
+            "Category": str(row['Category']),
+            "City": str(row['City']),
+            "Price": int(row['Price']) if pd.notna(row['Price']) else 0,
+            "Rating": float(row['Rating']) if pd.notna(row['Rating']) else 0.0,
+            "score": float(row['Rating']) if pd.notna(row['Rating']) else 0.0,
+            "price_category": "murah" if row['Price'] <= 50000 else ("menengah" if row['Price'] <= 200000 else "mahal")
+        })
+    
+    return recommendations
+
 @app.get("/recommendations", response_model=List[TourismRecommendationResponse])
 async def get_recommendations(
     location: Optional[str] = Query(None, description="Filter berdasarkan kota (Jakarta, Yogyakarta, Bandung, Semarang, Surabaya)"),
@@ -387,6 +448,27 @@ async def get_recommendations(
     """
     Endpoint untuk mendapatkan rekomendasi wisata general (tanpa user_id)
     """
+    # Try CSV data first, fallback to ML model if available, then dummy data
+    try:
+        recommendations = get_csv_recommendations(location, min_rating, price_category, category, top_n)
+        if recommendations:
+            response = []
+            for rec in recommendations:
+                response.append(TourismRecommendationResponse(
+                    Place_Id=rec['Place_Id'],
+                    Place_Name=rec['Place_Name'],
+                    Description=rec['Description'],
+                    Category=rec['Category'],
+                    City=rec['City'],
+                    Price=rec['Price'],
+                    Rating=rec['Rating'],
+                    score=rec['score'],
+                    price_category=rec['price_category']
+                ))
+            return response
+    except Exception as e:
+        print(f"Error with CSV recommendations: {e}")
+    
     if not loaded:
         # Fallback to dummy data
         print("Model not loaded, using fallback data")

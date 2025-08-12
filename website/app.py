@@ -159,6 +159,24 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
+    
+    /* Consistent image sizing for carousels */
+    .stImage > img {
+        height: 250px !important;
+        object-fit: cover !important;
+        border-radius: 10px;
+    }
+    
+    .destination-card .stImage {
+        height: 250px !important;
+        overflow: hidden !important;
+        border-radius: 10px;
+    }
+    
+    /* Carousel container consistency */
+    div[data-testid="stImage"] {
+        height: 250px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -229,27 +247,82 @@ def get_recommendations_from_api(location=None, min_rating=None, price_category=
         st.error(f"❌ Tidak dapat terhubung ke API: {str(e)}")
         return []
 
+def resize_image_for_carousel(img_path, target_width=400, target_height=250):
+    """Resize and crop image to standard carousel size"""
+    try:
+        with Image.open(img_path) as img:
+            # Convert to RGB if necessary
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Calculate aspect ratios
+            img_ratio = img.width / img.height
+            target_ratio = target_width / target_height
+            
+            if img_ratio > target_ratio:
+                # Image is wider than target, crop width
+                new_height = target_height
+                new_width = int(target_height * img_ratio)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                
+                # Crop from center
+                left = (new_width - target_width) // 2
+                img = img.crop((left, 0, left + target_width, target_height))
+            else:
+                # Image is taller than target, crop height
+                new_width = target_width
+                new_height = int(target_width / img_ratio)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                
+                # Crop from center
+                top = (new_height - target_height) // 2
+                img = img.crop((0, top, target_width, top + target_height))
+            
+            # Convert to base64 for embedding
+            import base64
+            import io
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='JPEG', quality=85)
+            img_base64 = base64.b64encode(img_buffer.getvalue()).decode()
+            return f"data:image/jpeg;base64,{img_base64}"
+            
+    except Exception as e:
+        print(f"Error resizing image {img_path}: {e}")
+        return None
+
 def display_image_carousel(images, destination_id):
     """Display image carousel for destination with fallback to native implementation"""
     if not images:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
     
-    # Filter existing images
+    # Filter existing images and resize them
     valid_images = []
+    resized_images = []
+    
     for img_path in images:
         if os.path.exists(img_path):
             valid_images.append(img_path)
+            # Pre-resize for consistent sizing
+            resized = resize_image_for_carousel(img_path)
+            if resized:
+                resized_images.append(resized)
     
     if not valid_images:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
     
-    # If only one image, display it directly
+    # If only one image, display it directly with consistent size
     if len(valid_images) == 1:
         try:
             image = Image.open(valid_images[0])
-            st.image(image, use_container_width=True)
+            # Resize to standard carousel size
+            resized = resize_image_for_carousel(valid_images[0])
+            if resized:
+                st.image(resized, use_container_width=True)
+            else:
+                # Fallback with consistent height
+                st.image(image, use_container_width=True, height=250)
         except:
             st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
         return
@@ -257,21 +330,14 @@ def display_image_carousel(images, destination_id):
     # Use streamlit-carousel if available, otherwise fallback to native
     if CAROUSEL_AVAILABLE:
         try:
-            # Prepare for streamlit-carousel
+            # Prepare for streamlit-carousel with resized images
             carousel_items = []
-            for img_path in valid_images:
-                try:
-                    # Convert to base64 for carousel
-                    with open(img_path, "rb") as img_file:
-                        import base64
-                        img_base64 = base64.b64encode(img_file.read()).decode()
-                        carousel_items.append({
-                            "title": f"Gambar {len(carousel_items) + 1}",
-                            "text": "",
-                            "img": f"data:image/jpeg;base64,{img_base64}"
-                        })
-                except Exception as e:
-                    continue
+            for i, resized_img in enumerate(resized_images):
+                carousel_items.append({
+                    "title": f"Gambar {i + 1}",
+                    "text": "",
+                    "img": resized_img
+                })
             
             if carousel_items:
                 carousel(
@@ -283,9 +349,10 @@ def display_image_carousel(images, destination_id):
                 return
         except Exception as e:
             # Fallback to native if carousel fails
+            print(f"Carousel error: {e}")
             pass
     
-    # Native Streamlit implementation (fallback)
+    # Native Streamlit implementation (fallback) with consistent sizing
     carousel_key = f"carousel_{destination_id}"
     if carousel_key not in st.session_state:
         st.session_state[carousel_key] = 0
@@ -293,10 +360,19 @@ def display_image_carousel(images, destination_id):
     # Create container for image and navigation
     current_idx = st.session_state[carousel_key]
     
-    # Display current image
+    # Display current image with consistent size
     try:
-        image = Image.open(valid_images[current_idx])
-        st.image(image, use_container_width=True)
+        if current_idx < len(resized_images):
+            # Use pre-resized image
+            st.image(resized_images[current_idx], use_container_width=True)
+        else:
+            # Fallback: resize on the fly
+            resized = resize_image_for_carousel(valid_images[current_idx])
+            if resized:
+                st.image(resized, use_container_width=True)
+            else:
+                image = Image.open(valid_images[current_idx])
+                st.image(image, use_container_width=True)
     except:
         st.image("https://via.placeholder.com/400x250/667eea/white?text=No+Image", use_container_width=True)
     
