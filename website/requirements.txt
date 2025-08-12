@@ -5,7 +5,3 @@ requests==2.32.3
 plotly==5.24.1
 Pillow==11.0.0
 streamlit-option-menu==0.4.0
-extra-streamlit-components==0.1.71
-streamlit-lottie==0.0.5
-streamlit-authenticator==0.3.3
-streamlit-carousel==1.1.2
